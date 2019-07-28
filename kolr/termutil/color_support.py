@@ -20,11 +20,11 @@ supports-color:
 # Valid color modes for kolr
 import platform
 
-ANSI_MONOCHROME   = 0x0 # 0
+ANSI_MONOCHROME   = 0x0
 ANSI_3_BIT_COLOR  = 0x7
-ANSI_4_BIT_COLOR  = 0xF # 1
-ANSI_8_BIT_COLOR  = 0xFF # 2
-ANSI_24_BIT_COLOR = 0xFFFFFF # 3
+ANSI_4_BIT_COLOR  = 0xF
+ANSI_8_BIT_COLOR  = 0xFF
+ANSI_24_BIT_COLOR = 0xFFFFFF
 
 
 # ========================================================================= #
@@ -47,6 +47,7 @@ def _detect_color_support():
         # yeah, yah, yep, yup, uh-huh, okay, ok, okey-dokey, okey-doke, righty-ho
         return string.lower() in {'1', 'on', 'y', 'yes', 'enable', 'enabled'}
 
+    # | # 0:monochrome, 1:4bit, 2:8bit, 3:24bit
     # | if (forceColor == 0):
     # |     return 0
     # | if (hasFlag('color=16m') or hasFlag('color=full') or hasFlag('color=truecolor')):
@@ -55,7 +56,6 @@ def _detect_color_support():
     # |     return
     # | if (stream and not stream.isTTY and forceColor is None):
     # |     return 0
-    # |
     # | min = forceColor or 0
 
     if is_enabled(os.environ.get('KOLR_FORCE_MONOCHROME', '0')):
@@ -79,27 +79,18 @@ def _detect_color_support():
     if os.environ.get('TERM', None) == 'dumb':
         return ANSI_MONOCHROME
 
-    # | if (process.platform == 'win32'):
-    # |     # Windows 10 build 10586 is the first Windows release that supports 256 colors.
-    # |     # Windows 10 build 14931 is the first release that supports 16m/TrueColor.
-    # |     osRelease = os.release().split('.')
-    # |     if (int(osRelease[0]) >= 10 and int(osRelease[2]) >= 10586)
-    # |         return 3 if int(osRelease[2]) >= 14931 else 2
-    # |     return 1
-
+    # Windows 10 build 10586 is the first to support 8-bit colors.
+    # Windows 10 build 14931 is the first to support 24-bit colors.
     if 'win32' in platform.platform():
         version = platform.version().split('.')
         if int(version[0]) > 10 and (int(version[2]) >= 10586):
             return ANSI_24_BIT_COLOR if (int(version[2]) >= 14931) else ANSI_8_BIT_COLOR
         return ANSI_8_BIT_COLOR
 
-    # | if ('CI' in env):
-    # |     if (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI'].some(sign => sign in env) or env.CI_NAME == 'codeship'):
-    # |         return 1
-    # |     return min
-
     if 'CI' in os.environ:
-        if any(key in os.environ for key in ['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI']) or os.environ.get('CI_NAME', None) == 'codeship':
+        if any(key in os.environ for key in ['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI']):
+            return ANSI_4_BIT_COLOR
+        if os.environ.get('CI_NAME', None) == 'codeship':
             return ANSI_4_BIT_COLOR
 
     # | if ('TEAMCITY_VERSION' in env):
@@ -108,22 +99,12 @@ def _detect_color_support():
     if os.environ.get('TEAMCITY_VERSION', None):
         return ANSI_4_BIT_COLOR
 
-    # | if (env.COLORTERM == 'truecolor'):
-    # |     return 3
-
     colorterm_env = os.environ.get('COLORTERM', None)
     if colorterm_env:
         if colorterm_env in {'truecolor', '24bit'}:
             return ANSI_24_BIT_COLOR
         if colorterm_env in {'8bit'}:
             return ANSI_8_BIT_COLOR
-
-    # | if ('TERM_PROGRAM' in env):
-    # |     if env.TERM_PROGRAM == 'iTerm.app':
-    # |         version = parseInt((env.TERM_PROGRAM_VERSION or '').split('.')[0], 10)
-    # |         return version >= 3 ? 3 : 2
-    # |     elif env.TERM_PROGRAM == 'Apple_Terminal':
-    # |         return 2
 
     termprog_env = os.environ.get('TERM_PROGRAM', None)
     if termprog_env:
@@ -135,22 +116,15 @@ def _detect_color_support():
         if termprog_env in {'Apple_Terminal'}:
             return ANSI_8_BIT_COLOR
 
-    # | if (/-256(color)?$/i.test(env.TERM)):
-    # |     return 2
-    # |
-    # | if (/^screen|^xterm|^vt100|^vt220|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)):
-    # |     return 1
-
     term_env = os.environ.get('TERM', None)
     if term_env:
-        if term_env in {'screen-256', 'screen-256color', 'xterm-256', 'xterm-256color'} or ('256' in term_env):
+        if term_env in {'screen-256', 'screen-256color', 'xterm-256', 'xterm-256color'} or ('-256' in term_env):
             return ANSI_8_BIT_COLOR
         if term_env in {'screen', 'xterm', 'vt100', 'vt220', 'rxvt', 'color', 'ansi', 'cygwin', 'linux'}:
             return ANSI_4_BIT_COLOR
 
     # | if ('COLORTERM' in env):
     # |     return 1
-    # |
     # | return min
 
     if colorterm_env:
