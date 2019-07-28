@@ -31,7 +31,7 @@ TERMINALS = {TERM_VGA, TERM_WIN, TERM_WPS, TERM_W10, TERM_OSX, TERM_PTY, TERM_MI
 _TermColor = namedtuple('TermColor', ['name', 'code_fg', 'code_bg', 'color_map'])
 
 
-_COLORS = [
+_TERM_COLORS = [
     _TermColor('black',          30, 40,  {TERM_VGA: (0,  0,  0),   TERM_WIN: (0,  0,  0),   TERM_WPS: (0,  0,  0),   TERM_W10: (12, 12, 12),  TERM_OSX: (0,  0,  0),   TERM_PTY: (0,  0,  0),   TERM_MIR: (0,  0,  0),   TERM_XTM: (0,  0,  0),   TERM_X: (0,0,0),       TERM_UBT: (1,  1,  1)  }),
     _TermColor('red',            31, 41,  {TERM_VGA: (170,0,  0),   TERM_WIN: (128,0,  0),   TERM_WPS: (128,0,  0),   TERM_W10: (197,15, 31),  TERM_OSX: (194,54, 33),  TERM_PTY: (187,0,  0),   TERM_MIR: (127,0,  0),   TERM_XTM: (205,0,  0),   TERM_X: (255,0,0),     TERM_UBT: (222,56, 43) }),
     _TermColor('green',          32, 42,  {TERM_VGA: (0,  170,0),   TERM_WIN: (0,  128,0),   TERM_WPS: (0,  128,0),   TERM_W10: (19, 161,14),  TERM_OSX: (37, 188,36),  TERM_PTY: (0,  187,0),   TERM_MIR: (0,  147,0),   TERM_XTM: (0,  205,0),   TERM_X: (0,255,0),     TERM_UBT: (57, 181,74) }),
@@ -50,8 +50,8 @@ _COLORS = [
     _TermColor('bright_white',   97, 107, {TERM_VGA: (255,255,255), TERM_WIN: (255,255,255), TERM_WPS: (255,255,255), TERM_W10: (242,242,242), TERM_OSX: (233,235,235), TERM_PTY: (255,255,255), TERM_MIR: (255,255,255), TERM_XTM: (255,255,255), TERM_X: None,          TERM_UBT: (255,255,255)}),
 ]
 
-COLORS_3BIT = [_COLORS[i] for i in range(2**3)]
-COLORS_4BIT = [_COLORS[i] for i in range(2**4)]
+_TERM_COLORS_3_BIT = [_TERM_COLORS[i] for i in range(2**3)]
+_TERM_COLORS_4_BIT = [_TERM_COLORS[i] for i in range(2**4)]
 
 
 # ========================================================================= #
@@ -104,6 +104,9 @@ def _detect_terminal():
 
 
 TERMINAL = _detect_terminal()
+
+COLORS_3_BIT = [(_TERM_COLORS[i].name, _TERM_COLORS[i].color_map[TERMINAL]) for i in range(2**3)]
+COLORS_4_BIT = [(_TERM_COLORS[i].name, _TERM_COLORS[i].color_map[TERMINAL]) for i in range(2**4)]
 
 
 # ========================================================================= #
