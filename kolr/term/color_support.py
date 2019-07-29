@@ -20,7 +20,7 @@ supports-color:
 # Valid color modes for kolr
 import platform
 
-ANSI_MONOCHROME   = 0x0
+ANSI_MONO_COLOR   = 0x0
 ANSI_3_BIT_COLOR  = 0x7
 ANSI_4_BIT_COLOR  = 0xF
 ANSI_8_BIT_COLOR  = 0xFF
@@ -47,8 +47,8 @@ def _detect_color_support():
         # yeah, yah, yep, yup, uh-huh, okay, ok, okey-dokey, okey-doke, righty-ho
         return string.lower() in {'1', 'on', 'y', 'yes', 'enable', 'enabled'}
 
-    if is_enabled(os.environ.get('KOLR_FORCE_MONOCHROME', '0')):
-        return ANSI_MONOCHROME
+    if is_enabled(os.environ.get('KOLR_FORCE_MONO', '0')):
+        return ANSI_MONO_COLOR
     elif is_enabled(os.environ.get('KOLR_FORCE_3_BIT', '0')):
         return ANSI_3_BIT_COLOR
     elif is_enabled(os.environ.get('KOLR_FORCE_4_BIT', '0')):
@@ -60,10 +60,10 @@ def _detect_color_support():
 
     # if we are not a tty
     if not sys.stdout.isatty():
-        return ANSI_MONOCHROME
+        return ANSI_MONO_COLOR
 
     if os.environ.get('TERM', None) == 'dumb':
-        return ANSI_MONOCHROME
+        return ANSI_MONO_COLOR
 
     # Windows 10 build 10586 is the first to support 8-bit colors.
     # Windows 10 build 14931 is the first to support 24-bit colors.
@@ -112,7 +112,7 @@ def _detect_color_support():
         # had one with $COLORTERM, we use it!
         return ANSI_4_BIT_COLOR
 
-    return ANSI_3_BIT_COLOR  # return monochrome
+    return ANSI_3_BIT_COLOR  # return ANSI_3_MONO_COLOR
 
 
 # ========================================================================= #
@@ -120,21 +120,21 @@ def _detect_color_support():
 # ========================================================================= #
 
 
-COLOR_SUPPORT          = _detect_color_support()
+COLOR_SUPPORT = _detect_color_support()
 
-IS_MONOCHROME          = (COLOR_SUPPORT == ANSI_MONOCHROME)
-IS_3_BIT_COLOR         = (COLOR_SUPPORT == ANSI_3_BIT_COLOR)
-IS_4_BIT_COLOR         = (COLOR_SUPPORT == ANSI_4_BIT_COLOR)
-IS_8_BIT_COLOR         = (COLOR_SUPPORT == ANSI_8_BIT_COLOR)
-IS_24_BIT_COLOR        = (COLOR_SUPPORT == ANSI_24_BIT_COLOR)
+MAX_IS_MONO   = (COLOR_SUPPORT == ANSI_MONO_COLOR)
+MAX_IS_3_BIT  = (COLOR_SUPPORT == ANSI_3_BIT_COLOR)
+MAX_IS_4_BIT  = (COLOR_SUPPORT == ANSI_4_BIT_COLOR)
+MAX_IS_8_BIT  = (COLOR_SUPPORT == ANSI_8_BIT_COLOR)
+MAX_IS_24_BIT = (COLOR_SUPPORT == ANSI_24_BIT_COLOR)
 
-HAS_MONOCHROME_SUPPORT = (COLOR_SUPPORT >= ANSI_MONOCHROME)
-HAS_3_BIT_SUPPORT      = (COLOR_SUPPORT >= ANSI_3_BIT_COLOR)
-HAS_4_BIT_SUPPORT      = (COLOR_SUPPORT >= ANSI_4_BIT_COLOR)
-HAS_8_BIT_SUPPORT      = (COLOR_SUPPORT >= ANSI_8_BIT_COLOR)
-HAS_24_BIT_SUPPORT     = (COLOR_SUPPORT >= ANSI_24_BIT_COLOR)
+ALLOWS_MONO   = (COLOR_SUPPORT >= ANSI_MONO_COLOR)
+ALLOWS_3_BIT  = (COLOR_SUPPORT >= ANSI_3_BIT_COLOR)
+ALLOWS_4_BIT  = (COLOR_SUPPORT >= ANSI_4_BIT_COLOR)
+ALLOWS_8_BIT  = (COLOR_SUPPORT >= ANSI_8_BIT_COLOR)
+ALLOWS_24_BIT = (COLOR_SUPPORT >= ANSI_24_BIT_COLOR)
 
-HAS_NO_SUPPORT         = IS_MONOCHROME
+NO_SUPPORT = MAX_IS_MONO
 
 
 # ========================================================================= #
