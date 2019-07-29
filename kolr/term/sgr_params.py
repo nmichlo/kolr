@@ -43,7 +43,7 @@ SGR_PARAM_LIST = [
     _SgrParam(code=9, type=SGR_TYPE_STYLE, name='strikethrough', desc='Crossed-out', note='Characters legible, but marked for deletion.  Not widely supported.'),
     _SgrParam(code=10, type=SGR_TYPE_STYLE, name='font_primary', desc='Primary(default) font', note=None),
     *_SGR_PARAMETERS_ALT_FONTS, # 11-19 Alternate Font
-    _SgrParam(code=20, type=SGR_TYPE_STYLE, name='franktur', desc='Fraktur', note='Latin calligraphic hand. Hardly ever supported.'),  # https://en.wikipedia.org/wiki/Fraktur
+    _SgrParam(code=20, type=SGR_TYPE_STYLE, name='franktur', desc='Fraktur', note='Latin calligraphic hand. Hardly ever supported.'),  # https://en.wikipedia.org/wiki/Fraktur # might instead be reset_style (not color)
     _SgrParam(code=21, type=SGR_TYPE_RESET, name='reset_bold', desc='Bold off or Double Underline', note='Bold off not widely supported; double underline hardly ever supported.'),
     _SgrParam(code=22, type=SGR_TYPE_RESET, name='reset_intensity', desc='Normal color or intensity', note='Neither bold nor faint.'),
     _SgrParam(code=23, type=SGR_TYPE_RESET, name='reset_italic', desc='Not italic, not Fraktur', note=None),

@@ -6,7 +6,7 @@ from collections import namedtuple
 # ========================================================================= #
 # Terminal Names                                                            #
 # ========================================================================= #
-
+from kolr.color import Color
 
 TERM_VGA = 'VGA'
 TERM_WIN = 'WindowsConsole'
@@ -98,6 +98,30 @@ def _detect_terminal():
 
 
 # ========================================================================= #
+# 8-BIT COLORS                                                              #
+# ========================================================================= #
+
+def _make_colors_8_bit():
+    # https://en.wikipedia.org/wiki/ANSI_escape_code#3/4_bit
+    #   0->  7:  standard colors (as in ESC [ 30–37 m)
+    # matches wikipedia table
+    standard = [(f'c{i}_{_TERM_COLORS_4_BIT[i].name}', Color((128*(i%2), 128*((i//2)%2), 128*(i//4))).hex) for i in range(8)]
+    standard[7] = (f'c{7}_{_TERM_COLORS_4_BIT[7].name}', '#c0c0c0')  # fix dark white
+    #   8-> 15:  high intensity colors (as in ESC [ 90–97 m)
+    # matches wikipedia table
+    bright = [(f'c{i+8}_{_TERM_COLORS_4_BIT[i+8].name}', Color((255*(i%2), 255*((i//2)%2), 255*(i//4))).hex) for i in range(8)]
+    bright[0] = (f'c{8}_{_TERM_COLORS_4_BIT[8].name}', '#808080')  # fix light black
+    #  16->231:  6×6×6 cube (216 colors): 16 + 36×r + 6×g + b (0 ≤ r, g, b ≤ 5)
+    # does not match wikipedia table
+    cube = [(f'c{i+16}_cube', Color((int(255/5*(i//36)), int(255/5*((i//6)%6)), int(255/5*(i%6)))).hex) for i in range(216)]
+    # 232->255:  grayscale from black to white in 24 steps
+    # should be /25 for centering, does not match wikipedia table
+    grays = [(f'c{i+232}_grey', Color(tuple([int(255/26*(i+1))]*3)).hex) for i in range(24)]
+    # merge
+    return [*standard, *bright, *cube, *grays]
+
+
+# ========================================================================= #
 # DETECT                                                                    #
 # ========================================================================= #
 
@@ -106,6 +130,8 @@ TERMINAL = _detect_terminal()
 
 COLORS_3_BIT = [(_TERM_COLORS[i].name, _TERM_COLORS[i].color_map[TERMINAL]) for i in range(2**3)]
 COLORS_4_BIT = [(_TERM_COLORS[i].name, _TERM_COLORS[i].color_map[TERMINAL]) for i in range(2**4)]
+COLORS_8_BIT = _make_colors_8_bit()
+COLORS_8_BIT_WIKIPEDIA = None
 
 
 # ========================================================================= #

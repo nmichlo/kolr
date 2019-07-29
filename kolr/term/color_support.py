@@ -47,17 +47,6 @@ def _detect_color_support():
         # yeah, yah, yep, yup, uh-huh, okay, ok, okey-dokey, okey-doke, righty-ho
         return string.lower() in {'1', 'on', 'y', 'yes', 'enable', 'enabled'}
 
-    # | # 0:monochrome, 1:4bit, 2:8bit, 3:24bit
-    # | if (forceColor == 0):
-    # |     return 0
-    # | if (hasFlag('color=16m') or hasFlag('color=full') or hasFlag('color=truecolor')):
-    # |     return 3
-    # | if (hasFlag('color=256')):
-    # |     return
-    # | if (stream and not stream.isTTY and forceColor is None):
-    # |     return 0
-    # | min = forceColor or 0
-
     if is_enabled(os.environ.get('KOLR_FORCE_MONOCHROME', '0')):
         return ANSI_MONOCHROME
     elif is_enabled(os.environ.get('KOLR_FORCE_3_BIT', '0')):
@@ -72,9 +61,6 @@ def _detect_color_support():
     # if we are not a tty
     if not sys.stdout.isatty():
         return ANSI_MONOCHROME
-
-    # | if (env.TERM == 'dumb'):
-    # |     return min
 
     if os.environ.get('TERM', None) == 'dumb':
         return ANSI_MONOCHROME
@@ -93,10 +79,8 @@ def _detect_color_support():
         if os.environ.get('CI_NAME', None) == 'codeship':
             return ANSI_4_BIT_COLOR
 
-    # | if ('TEAMCITY_VERSION' in env):
-    # |     return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0
-
     if os.environ.get('TEAMCITY_VERSION', None):
+        # return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0
         return ANSI_4_BIT_COLOR
 
     colorterm_env = os.environ.get('COLORTERM', None)
@@ -123,16 +107,12 @@ def _detect_color_support():
         if term_env in {'screen', 'xterm', 'vt100', 'vt220', 'rxvt', 'color', 'ansi', 'cygwin', 'linux'}:
             return ANSI_4_BIT_COLOR
 
-    # | if ('COLORTERM' in env):
-    # |     return 1
-    # | return min
-
     if colorterm_env:
         # if there was no match with $TERM either but we
         # had one with $COLORTERM, we use it!
         return ANSI_4_BIT_COLOR
 
-    return ANSI_3_BIT_COLOR
+    return ANSI_3_BIT_COLOR  # return monochrome
 
 
 # ========================================================================= #

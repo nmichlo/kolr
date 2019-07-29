@@ -15,10 +15,24 @@ class Color(object):
             assert len(color) == 3
             self._rgb = color
         elif t == str:
-            assert len(color) == 7 and color[0] == '#' and color[1:-1].isnumeric()
+            assert len(color) == 7 and color[0] == '#'
             self._hex = color
         else:
             raise TypeError(f'Unsupported Type: {t}')
+
+    def __hash__(self):
+        return self.rgb.__hash__()
+
+    def __eq__(self, other):
+        if type(other) == Color:
+            return self.rgb == other.rgb
+        return False
+
+    def __str__(self):
+        return self.hex
+
+    def __repr__(self):
+        return str(self)
 
     @property
     def hex(self):
