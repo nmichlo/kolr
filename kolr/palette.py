@@ -24,16 +24,16 @@
 import os
 import re
 from typing import Dict, Tuple, List
-from cachier import cachier
 from jinja2 import Template
 from unidecode import unidecode
+from kolr.color import Color
+from kolr.util import util
 
 
 # ========================================================================= #
 # Types                                                                     #
 # ========================================================================= #
-from kolr.color import Color
-from kolr.util import util
+
 
 ColorHex = str
 ColorRgb = Tuple[int, int, int]
@@ -189,7 +189,7 @@ class ColorPalette3Bit(ColorPalette):
     NAME = 'colors_3_bit'
 
     def __init__(self):
-        from kolr.term.color_mapping import COLORS_3_BIT
+        from kolr.term.colors import COLORS_3_BIT
         super().__init__(COLORS_3_BIT)
 
 
@@ -197,7 +197,7 @@ class ColorPalette4Bit(ColorPalette):
     NAME = 'colors_4_bit'
 
     def __init__(self):
-        from kolr.term.color_mapping import COLORS_4_BIT
+        from kolr.term.colors import COLORS_4_BIT
         super().__init__(COLORS_4_BIT)
 
 
@@ -205,7 +205,7 @@ class ColorPalette8Bit(ColorPalette):
     NAME = 'colors_8_bit'
 
     def __init__(self):
-        from kolr.term.color_mapping import COLORS_8_BIT
+        from kolr.term.colors import COLORS_8_BIT
         super().__init__(COLORS_8_BIT, unique_colors=False)
 
 
@@ -213,9 +213,8 @@ class ColorPalette8BitWikipedia(ColorPalette):
     NAME = 'colors_8_bit_wikipedia'
 
     def __init__(self):
-        from kolr.term.color_mapping import COLORS_8_BIT_WIKIPEDIA
+        from kolr.term.colors import COLORS_8_BIT_WIKIPEDIA
         super().__init__(COLORS_8_BIT_WIKIPEDIA, unique_colors=False)
-
 
 
 # ========================================================================= #

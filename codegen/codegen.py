@@ -23,11 +23,18 @@
 
 from bs4 import BeautifulSoup
 from kolr.util.util import fetch_url, overwrite_file
+from kolr.palette import ColorPalette
 from terminaltables import AsciiTable
+from datetime import datetime
+import re
+import os
 
+
+# ========================================================================= #
+# COLOR                                                                     #
+# ========================================================================= #
 
 def _format_cell_text(text):
-    import re
     text = text.strip().replace('\xa0', ' ')  # &nbsp; Non breaking space
     text = re.sub('\[.+?\]', '', text)
     try:
@@ -43,7 +50,6 @@ def _format_cell_text(text):
 
 def _format_table(table, postfix=None):
     table = [[_format_cell_text(cell.text) for cell in row] for row in table]
-    from kolr.palette import ColorPalette
     names = ColorPalette.generate_unique_names(table[0])[0]
     postfix = postfix if postfix is not None else ""
     table = [[f'    T{postfix}(', *(f'{name}={cell.__repr__()}{", " if i < len(row) - 1 else ""}' for i, (name, cell) in enumerate(zip(names, row))), '),'] for row in table[1:]]
@@ -89,6 +95,13 @@ def _expand_table(header, rows, skip_fullwidth=False, skip_malformed=True):
         span_table.append(spans)
     return table
 
+
+# ========================================================================= #
+# WIKIPEDIA TABLES                                                          #
+# ========================================================================= #
+
+
+
 def _get_wikipedia_tables(url):
     soup = BeautifulSoup(fetch_url(url), "html.parser")
     elems = [
@@ -96,8 +109,6 @@ def _get_wikipedia_tables(url):
         *(elem for elem in soup.select_one('div.mw-parser-output').children if elem.name in {'h2', 'h3', 'table'})
     ]
     def _elems_as_name(*elems):
-        import re
-        from kolr.palette import ColorPalette
         return '___'.join([ColorPalette.standardised_name(re.sub('\[[Ee]dit\]', '', elem.text.strip())).strip('_') for elem in elems if elem])
     # name stack
     h1, h2, h3, tables = None, None, None, []
@@ -117,11 +128,10 @@ def _get_wikipedia_tables(url):
 
 
 def _gen_python_from_wikipedia_tables(page, name=None):
+    # TODO: this function should be split up
     strings, url = [], f'https://en.wikipedia.org/wiki/{page}'
     name = (url if name is None else name)
     # imports & heading
-    from datetime import datetime
-
     time = str(datetime.now().strftime('%Y-%m-%d %H:%M'))
     strings.append(f'\nfrom collections import namedtuple\n\n')
     strings.append(f'\n# {"="*73} #\n# {name}{" "*(73-len(name))} #\n# Generated: {time}{" "*(62-len(time))} #\n# {"="*73} #\n\n\n')
@@ -141,12 +151,20 @@ def _gen_python_from_wikipedia_tables(page, name=None):
 def _save_python_from_wikipedia_tables(page, path='gen'):
     python = _gen_python_from_wikipedia_tables(page)
     print(python)
-    from kolr.palette import ColorPalette
-    import os
     os.makedirs(path, exist_ok=True)
     overwrite_file(os.path.join(path, f'{ColorPalette.standardised_name(page)}.py'), python)
+
+
+# ========================================================================= #
+# MAIN                                                                      #
+# ========================================================================= #
 
 
 if __name__ == '__main__':
     _save_python_from_wikipedia_tables('ANSI_escape_code', path='gen')
     _save_python_from_wikipedia_tables('C0_and_C1_control_codes', path='gen')
+
+
+# ========================================================================= #
+# END                                                                       #
+# ========================================================================= #
