@@ -1,12 +1,12 @@
 # Nathan Michlo
 
 from collections import namedtuple
+from kolr.color import Color
 
 
 # ========================================================================= #
 # Terminal Names                                                            #
 # ========================================================================= #
-from kolr.color import Color
 
 TERM_VGA = 'VGA'
 TERM_WIN = 'WindowsConsole'
@@ -19,6 +19,7 @@ TERM_XTM = 'xterm'
 TERM_X   = 'X'
 TERM_UBT = 'Ubuntu'
 
+# TODO: this list is very incomplete
 TERMINALS = {TERM_VGA, TERM_WIN, TERM_WPS, TERM_W10, TERM_OSX, TERM_PTY, TERM_MIR, TERM_XTM, TERM_X, TERM_UBT}
 
 
@@ -49,10 +50,6 @@ _TERM_COLORS = [
     _TermColor('bright_white',   97, 107, {TERM_VGA: (255, 255, 255), TERM_WIN: (255, 255, 255), TERM_WPS: (255, 255, 255), TERM_W10: (242, 242, 242), TERM_OSX: (233, 235, 235), TERM_PTY: (255, 255, 255), TERM_MIR: (255, 255, 255), TERM_XTM: (255, 255, 255), TERM_X: None,            TERM_UBT: (255, 255, 255)}),
 ]
 
-_TERM_COLORS_3_BIT = [_TERM_COLORS[i] for i in range(2**3)]
-_TERM_COLORS_4_BIT = [_TERM_COLORS[i] for i in range(2**4)]
-
-
 # ========================================================================= #
 # DETECTOR                                                                  #
 # ========================================================================= #
@@ -61,7 +58,7 @@ _TERM_COLORS_4_BIT = [_TERM_COLORS[i] for i in range(2**4)]
 def _detect_terminal():
     """
     Naive attempt to detect the terminal program.
-    TODO: This needs lots of work, could merge detect color and detect termial logic?
+    TODO: This needs a lot of work, could merge detect color and detect termial logic?
     :return: possible detected terminal
     """
     import os
@@ -122,12 +119,12 @@ def _make_colors_8_bit():
     # https://en.wikipedia.org/wiki/ANSI_escape_code#3/4_bit
     #   0->  7:  standard colors (as in ESC [ 30–37 m)
     # matches wikipedia table
-    standard = [(f'c{i}_{_TERM_COLORS_4_BIT[i].name}', Color((128*(i%2), 128*((i//2)%2), 128*(i//4))).hex) for i in range(8)]
-    standard[7] = (f'c{7}_{_TERM_COLORS_4_BIT[7].name}', '#c0c0c0')  # fix dark white
+    standard = [(f'c{i}_{_TERM_COLORS[i].name}', Color((128*(i%2), 128*((i//2)%2), 128*(i//4))).hex) for i in range(8)]
+    standard[7] = (f'c{7}_{_TERM_COLORS[7].name}', '#c0c0c0')  # fix dark white
     #   8-> 15:  high intensity colors (as in ESC [ 90–97 m)
     # matches wikipedia table
-    bright = [(f'c{i+8}_{_TERM_COLORS_4_BIT[i+8].name}', Color((255*(i%2), 255*((i//2)%2), 255*(i//4))).hex) for i in range(8)]
-    bright[0] = (f'c{8}_{_TERM_COLORS_4_BIT[8].name}', '#808080')  # fix light black
+    bright = [(f'c{i+8}_{_TERM_COLORS[i+8].name}', Color((255*(i%2), 255*((i//2)%2), 255*(i//4))).hex) for i in range(8)]
+    bright[0] = (f'c{8}_{_TERM_COLORS[8].name}', '#808080')  # fix light black
     #  16->231:  6×6×6 cube (216 colors): 16 + 36×r + 6×g + b (0 ≤ r, g, b ≤ 5)
     # does not match wikipedia table
     cube = [(f'c{i+16}_cube', Color((int(255/5*(i//36)), int(255/5*((i//6)%6)), int(255/5*(i%6)))).hex) for i in range(216)]
