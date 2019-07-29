@@ -117,15 +117,15 @@ def _gen_python_from_wikipedia_tables(page, name=None):
     return ''.join(strings)
 
 
-def _save_python_from_wikipedia_tables(page):
+def _save_python_from_wikipedia_tables(page, path='gen'):
     python = _gen_python_from_wikipedia_tables(page)
     print(python)
     from kolr.palette import ColorPalette
     import os
-    os.makedirs('gen', exist_ok=True)
-    overwrite_file(f'gen/{ColorPalette.standardised_name(page)}.py', python)
+    os.makedirs(path, exist_ok=True)
+    overwrite_file(os.path.join(path, f'{ColorPalette.standardised_name(page)}.py'), python)
 
 
 if __name__ == '__main__':
-    _save_python_from_wikipedia_tables('ANSI_escape_code')
-    _save_python_from_wikipedia_tables('C0_and_C1_control_codes')
+    _save_python_from_wikipedia_tables('ANSI_escape_code', path='gen')
+    _save_python_from_wikipedia_tables('C0_and_C1_control_codes', path='gen')
