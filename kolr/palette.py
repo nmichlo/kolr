@@ -50,11 +50,11 @@ class ColorPalette(object):
 
     def __init__(self, name_color_tuples, unique_colors=True):
         assert type(self.NAME) == str, 'Specify the name of the color palette'
-        assert self.NAME == ColorPalette._standardised_name(self.NAME), 'Name must follow rules of python field'
+        assert self.NAME == ColorPalette.standardised_name(self.NAME), 'Name must follow rules of python field'
         assert util.is_iterable(name_color_tuples), TypeError(f'Non-Iterable names: {type(name_color_tuples)}')
         # names
         self._names_orig = [name for name, _ in name_color_tuples]
-        self._names, self._conflicts = ColorPalette._generate_unique_names(self._names_orig)
+        self._names, self._conflicts = ColorPalette.generate_unique_names(self._names_orig)
         # colors
         self._colors = [Color(color) for _, color in name_color_tuples]
         # sorted
@@ -77,7 +77,7 @@ class ColorPalette(object):
             raise TypeError('Invalid getter type')
 
     @staticmethod
-    def _standardised_name(name: str):
+    def standardised_name(name: str):
         if not name:
             return name
         standardised = unidecode(name)
@@ -85,13 +85,14 @@ class ColorPalette(object):
         standardised = re.sub('[-\']', '', standardised)
         standardised = re.sub('[/\\\\]', '_or_', standardised)
         standardised = re.sub('[^a-zA-Z0-9]+', '_', standardised)
+        standardised = standardised.rstrip('_')
         if standardised[0].isdigit():
             standardised = f'_{standardised}'
         return standardised
 
     @staticmethod
-    def _generate_unique_names(orig_names: ListNames) -> Tuple[ListNames, Dict[str, Tuple[str, str, int]]]:
-        names = [FileColorPalette._standardised_name(orig) for orig in orig_names]
+    def generate_unique_names(orig_names: ListNames) -> Tuple[ListNames, Dict[str, Tuple[str, str, int]]]:
+        names = [FileColorPalette.standardised_name(orig) for orig in orig_names]
         indices = sorted(range(len(names)), key=lambda i: f'{names[i]}={orig_names[i]}={i}')  # argsort
         # find conflicts & repetitions
         unique, conflicts, stack = [None] * len(orig_names), {}, [(None, None)]

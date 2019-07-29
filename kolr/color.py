@@ -2,6 +2,10 @@
 
 
 class Color(object):
+    """
+    Basic color object that supports conversion between rgb and hex values.
+    Computed values are cached.
+    """
 
     def __init__(self, color):
         self._rgb = None
