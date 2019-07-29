@@ -32,10 +32,8 @@ def _format_table(table, postfix=None):
     table.inner_heading_row_border = False
     table.padding_left = 0
     table.padding_right = 0
-    table = f'T{postfix} = namedtuple(\'_NamedTuple{postfix}\', [{", ".join(n.__repr__() for n in names)}])\n' + f'L{postfix} = [\n{table.table}\n]'
+    table = f'T{postfix} = namedtuple(\'T{postfix}\', [{", ".join(n.__repr__() for n in names)}])\n' + f'L{postfix} = [\n{table.table}\n]'
     return table
-
-
 
 
 def _expand_table(header, rows, skip_fullwidth=False, skip_malformed=True):
