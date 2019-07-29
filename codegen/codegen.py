@@ -99,8 +99,11 @@ def _gen_python_from_wikipedia_tables(page, name=None):
     strings, url = [], f'https://en.wikipedia.org/wiki/{page}'
     name = (url if name is None else name)
     # imports & heading
+    from datetime import datetime
+
+    time = str(datetime.now().strftime('%Y-%m-%d %H:%M'))
     strings.append(f'\nfrom collections import namedtuple\n\n')
-    strings.append(f'\n# {"="*73} #\n# {name}{" "*(73-len(name))} #\n# {"="*73} #\n\n\n')
+    strings.append(f'\n# {"="*73} #\n# {name}{" "*(73-len(name))} #\n# Generated: {time}{" "*(62-len(time))} #\n# {"="*73} #\n\n\n')
     # get and append tables
     for (name, table) in _get_wikipedia_tables(url):
         # generate table
