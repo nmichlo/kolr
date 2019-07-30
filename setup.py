@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.1dev0",
     author="Nathan Juraj Michlo",
     author_email="NathanJMichlo@gmail.com",
-    description="✨🎨🖌 Terminal independent colors, palettes and styles that work as expected.",
+    description="✨🎨🖌 Terminal independent colors, palettes and styles done right",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/nmichlo/kolr",
