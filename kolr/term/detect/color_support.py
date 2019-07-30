@@ -36,12 +36,12 @@
 # ========================================================================= #
 
 
-# Valid color modes for kolr
-ANSI_MONO_COLOR   = 0x0
-ANSI_3_BIT_COLOR  = 0x7
-ANSI_4_BIT_COLOR  = 0xF
-ANSI_8_BIT_COLOR  = 0xFF
-ANSI_24_BIT_COLOR = 0xFFFFFF
+# Valid termina color modes
+CODE_MONO   = 0x0
+CODE_3_BIT  = 0x7
+CODE_4_BIT  = 0xF
+CODE_8_BIT  = 0xFF
+CODE_24_BIT = 0xFFFFFF
 
 
 # ========================================================================= #
@@ -51,6 +51,13 @@ ANSI_24_BIT_COLOR = 0xFFFFFF
 
 def detect_color_support(env=None):
     """
+    Force color support by setting one of the following environment variables to '1':
+        - KOLR_FORCE_MONO
+        - KOLR_FORCE_3_BIT
+        - KOLR_FORCE_4_BIT
+        - KOLR_FORCE_8_BIT
+        - KOLR_FORCE_24_BIT
+
     Detect the largest color palette supported by the terminal.
     :return: one of ANSI_MONOCHROME|ANSI_3_BIT_COLOR|ANSI_4_BIT_COLOR|ANSI_8_BIT_COLOR|ANSI_24_BIT_COLOR
     """
@@ -66,23 +73,23 @@ def detect_color_support(env=None):
         return string.lower() in {'1', 'on', 'y', 'yes', 'enable', 'enabled'}
 
     if is_enabled(env.get('KOLR_FORCE_MONO', '0')):
-        return ANSI_MONO_COLOR
+        return CODE_MONO
     elif is_enabled(env.get('KOLR_FORCE_3_BIT', '0')):
-        return ANSI_3_BIT_COLOR
+        return CODE_3_BIT
     elif is_enabled(env.get('KOLR_FORCE_4_BIT', '0')):
-        return ANSI_4_BIT_COLOR
+        return CODE_4_BIT
     elif is_enabled(env.get('KOLR_FORCE_8_BIT', '0')):
-        return ANSI_8_BIT_COLOR
+        return CODE_8_BIT
     elif is_enabled(env.get('KOLR_FORCE_24_BIT', '0')):
-        return ANSI_24_BIT_COLOR
+        return CODE_24_BIT
 
     # if we are not a tty
     import sys
     if not sys.stdout.isatty():
-        return ANSI_MONO_COLOR
+        return CODE_MONO
 
     if env.get('TERM', None) == 'dumb':
-        return ANSI_MONO_COLOR
+        return CODE_MONO
 
     # Windows 10 build 10586 is the first to support 8-bit colors.
     # Windows 10 build 14931 is the first to support 24-bit colors.
@@ -90,50 +97,50 @@ def detect_color_support(env=None):
     if 'win32' in platform.platform():
         version = platform.version().split('.')
         if int(version[0]) > 10 and (int(version[2]) >= 10586):
-            return ANSI_24_BIT_COLOR if (int(version[2]) >= 14931) else ANSI_8_BIT_COLOR
-        return ANSI_8_BIT_COLOR
+            return CODE_24_BIT if (int(version[2]) >= 14931) else CODE_8_BIT
+        return CODE_8_BIT
 
     if 'CI' in env:
         if any(key in env for key in ['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI']):
-            return ANSI_4_BIT_COLOR
+            return CODE_4_BIT
         if env.get('CI_NAME', None) == 'codeship':
-            return ANSI_4_BIT_COLOR
+            return CODE_4_BIT
 
     if env.get('TEAMCITY_VERSION', None):
         # return /^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0
-        return ANSI_4_BIT_COLOR
+        return CODE_4_BIT
 
     colorterm_env = env.get('COLORTERM', None)
     if colorterm_env:
         if colorterm_env in {'truecolor', '24bit'}:
-            return ANSI_24_BIT_COLOR
+            return CODE_24_BIT
         if colorterm_env in {'8bit'}:
-            return ANSI_8_BIT_COLOR
+            return CODE_8_BIT
 
     # TODO: replace with dedicated terminal detection
     termprog_env = env.get('TERM_PROGRAM', None)
     if termprog_env:
         if termprog_env in {'iTerm.app'}:
             version = int(env.get('TERM_PROGRAM_VERSION', '2').split('.')[0])
-            return ANSI_24_BIT_COLOR if version >= 3 else ANSI_8_BIT_COLOR
+            return CODE_24_BIT if version >= 3 else CODE_8_BIT
         if termprog_env in {'Hyper'}:
-            return ANSI_24_BIT_COLOR
+            return CODE_24_BIT
         if termprog_env in {'Apple_Terminal'}:
-            return ANSI_8_BIT_COLOR
+            return CODE_8_BIT
 
     term_env = env.get('TERM', None)
     if term_env:
         if term_env in {'screen-256', 'screen-256color', 'xterm-256', 'xterm-256color'} or ('-256' in term_env):
-            return ANSI_8_BIT_COLOR
+            return CODE_8_BIT
         if term_env in {'screen', 'xterm', 'vt100', 'vt220', 'rxvt', 'color', 'ansi', 'cygwin', 'linux'}:
-            return ANSI_4_BIT_COLOR
+            return CODE_4_BIT
 
     if colorterm_env:
         # if there was no match with $TERM either but we
         # had one with $COLORTERM, we use it!
-        return ANSI_4_BIT_COLOR
+        return CODE_4_BIT
 
-    return ANSI_3_BIT_COLOR  # return ANSI_3_MONO_COLOR
+    return CODE_3_BIT  # return ANSI_3_MONO_COLOR
 
 
 # ========================================================================= #
@@ -141,21 +148,19 @@ def detect_color_support(env=None):
 # ========================================================================= #
 
 
-COLOR_SUPPORT = detect_color_support()
+DETECTED_CODE = detect_color_support()
 
-MAX_IS_MONO   = (COLOR_SUPPORT == ANSI_MONO_COLOR)
-MAX_IS_3_BIT  = (COLOR_SUPPORT == ANSI_3_BIT_COLOR)
-MAX_IS_4_BIT  = (COLOR_SUPPORT == ANSI_4_BIT_COLOR)
-MAX_IS_8_BIT  = (COLOR_SUPPORT == ANSI_8_BIT_COLOR)
-MAX_IS_24_BIT = (COLOR_SUPPORT == ANSI_24_BIT_COLOR)
+IS_MONO   = (DETECTED_CODE == CODE_MONO)
+IS_3_BIT  = (DETECTED_CODE == CODE_3_BIT)
+IS_4_BIT  = (DETECTED_CODE == CODE_4_BIT)
+IS_8_BIT  = (DETECTED_CODE == CODE_8_BIT)
+IS_24_BIT = (DETECTED_CODE == CODE_24_BIT)
 
-ALLOWS_MONO   = (COLOR_SUPPORT >= ANSI_MONO_COLOR)
-ALLOWS_3_BIT  = (COLOR_SUPPORT >= ANSI_3_BIT_COLOR)
-ALLOWS_4_BIT  = (COLOR_SUPPORT >= ANSI_4_BIT_COLOR)
-ALLOWS_8_BIT  = (COLOR_SUPPORT >= ANSI_8_BIT_COLOR)
-ALLOWS_24_BIT = (COLOR_SUPPORT >= ANSI_24_BIT_COLOR)
-
-NO_SUPPORT = MAX_IS_MONO
+ALLOWS_MONO   = (DETECTED_CODE >= CODE_MONO)
+ALLOWS_3_BIT  = (DETECTED_CODE >= CODE_3_BIT)
+ALLOWS_4_BIT  = (DETECTED_CODE >= CODE_4_BIT)
+ALLOWS_8_BIT  = (DETECTED_CODE >= CODE_8_BIT)
+ALLOWS_24_BIT = (DETECTED_CODE >= CODE_24_BIT)
 
 
 # ========================================================================= #
@@ -164,7 +169,7 @@ NO_SUPPORT = MAX_IS_MONO
 
 
 if __name__ == '__main__':
-    print('Detected Number of Support Colors:', COLOR_SUPPORT)
+    print('Detected Number of Support Colors:', DETECTED_CODE)
 
 
 # ========================================================================= #

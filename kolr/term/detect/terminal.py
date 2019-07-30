@@ -26,30 +26,32 @@
 # ========================================================================= #
 
 
+from kolr.term.detect.color_support import IS_3_BIT
+
 # Valid TERMINAL_EMULATOR options:
-TERM__JETBRAINS_JEDITERM = 'JetBrains-JediTerm'  # TERMINAL_EMULATOR=JetBrains-JediTerm, TERM=xterm-256color
+CODE__JETBRAINS_JEDITERM = 'JetBrains-JediTerm'  # TERMINAL_EMULATOR=JetBrains-JediTerm, TERM=xterm-256color
 
 # List of valid options for TERMINAL_EMULATOR:
-TERMINAL_EMULATORS = {
-    TERM__JETBRAINS_JEDITERM,
+_TERMINAL_EMULATORS = {
+    CODE__JETBRAINS_JEDITERM,
 }
 
 # Valid TERM_PROGRAM options:
-TERM__HYPER= 'Hyper'                  # Hyper: TERM_PROGRAM=Hyper, TERM=xterm-256color
-TERM__ITERM_APP= 'iTerm.app'          # iTerm: TERM=xterm-256color, TERM_PROGRAM=iTerm.app
-TERM__TERMINAL_APP= 'Apple_Terminal'  # Terminal.app: TERM=xterm-256color, TERM_PROGRAM=Apple_Terminal
+CODE__HYPER= 'Hyper'                  # Hyper: TERM_PROGRAM=Hyper, TERM=xterm-256color
+CODE__ITERM_APP= 'iTerm.app'          # iTerm: TERM=xterm-256color, TERM_PROGRAM=iTerm.app
+CODE__TERMINAL_APP= 'Apple_Terminal'  # Terminal.app: TERM=xterm-256color, TERM_PROGRAM=Apple_Terminal
 
 # List of valid options for TERM_PROGRAM:
-TERM_PROGRAMS = {
-    TERM__HYPER,
-    TERM__ITERM_APP,
-    TERM__TERMINAL_APP,
+_TERM_PROGRAMS = {
+    CODE__HYPER,
+    CODE__ITERM_APP,
+    CODE__TERMINAL_APP,
 }
 
 # Other Terminal:
-TERM__COOL_RETRO_TERM = 'cool-retro-term'
-TERM__KITTY = 'kitty'
-TERM__ALACRITTY = 'alacritty'
+CODE__COOL_RETRO_TERM = 'cool-retro-term'
+CODE__KITTY = 'kitty'
+CODE__ALACRITTY = 'alacritty'
 
 
 # ========================================================================= #
@@ -67,25 +69,25 @@ def detect_terminal():
 
     termprog_env = os.environ.get('TERM_PROGRAM', None)
     if termprog_env:
-        if termprog_env in TERM_PROGRAMS:
+        if termprog_env in _TERM_PROGRAMS:
             return termprog_env
         print(f'TERM_PROGRAM does not match, please report this: {os.environ}\n')
 
     termemulator_env = os.environ.get('TERMINAL_EMULATOR', None)
     if termemulator_env:
-        if termemulator_env in TERMINAL_EMULATORS:
+        if termemulator_env in _TERMINAL_EMULATORS:
             return termemulator_env
         print(f'TERMINAL_EMULATOR does not match, please report this: {os.environ}\n')
 
-    if TERM__COOL_RETRO_TERM in os.environ.get('KB_LAYOUT_DIR', '') or TERM__COOL_RETRO_TERM in os.environ.get('COLORSCHEMES_DIR', ''):
+    if CODE__COOL_RETRO_TERM in os.environ.get('KB_LAYOUT_DIR', '') or CODE__COOL_RETRO_TERM in os.environ.get('COLORSCHEMES_DIR', ''):
         # cool-retro-term: TERM=xterm, KB_LAYOUT_DIR: /Applications/cool-retro-term.app/Contents/MacOS/../PlugIns/QMLTermWidget/kb-layouts, COLORSCHEMES_DIR: /Applications/cool-retro-term.app/Contents/MacOS/../PlugIns/QMLTermWidget/color-schemes
-        return TERM__COOL_RETRO_TERM
+        return CODE__COOL_RETRO_TERM
     if os.environ.get('ALACRITTY_LOG', None) is not None:
         # Alacritty: # TERM=xterm-256color ALACRITTY_LOG=/var/folders/.../T/Alacritty-68540.log
-        return TERM__ALACRITTY
-    if (os.environ.get('KITTY_WINDOW_ID', None) is not None) or (TERM__KITTY in os.environ.get('TERMINFO', '')) or (TERM__KITTY in os.environ.get('TERM', '')):
+        return CODE__ALACRITTY
+    if (os.environ.get('KITTY_WINDOW_ID', None) is not None) or (CODE__KITTY in os.environ.get('TERMINFO', '')) or (CODE__KITTY in os.environ.get('TERM', '')):
         # Kitty: KITTY_WINDOW_ID=1, TERMINFO=/Applications/kitty.app/Contents/Frameworks/kitty/..., TERM=xterm-kitty
-        return TERM__KITTY
+        return CODE__KITTY
 
     # _plat = sys.platform.lower()
     # if 'darwin' in _plat:
@@ -113,7 +115,7 @@ def detect_terminal():
 # ========================================================================= #
 
 
-TERMINAL = detect_terminal()
+DETECTED_TERMINAL = detect_terminal()
 
 
 # ========================================================================= #
@@ -122,4 +124,4 @@ TERMINAL = detect_terminal()
 
 
 if __name__ == '__main__':
-    print('Detected Terminal:', TERMINAL)
+    print('Detected Terminal:', DETECTED_TERMINAL)
