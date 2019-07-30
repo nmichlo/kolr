@@ -21,9 +21,9 @@
 #  SOFTWARE.
 
 
+from typing import Dict, Tuple, List
 import os
 import re
-from typing import Dict, Tuple, List
 from jinja2 import Template
 from unidecode import unidecode
 from kolr.color import Color
@@ -35,23 +35,23 @@ from kolr.util import util
 # ========================================================================= #
 
 
-ColorHex = str
-ColorRgb = Tuple[int, int, int]
+_ColorHex = str
+_ColorRgb = Tuple[int, int, int]
 
-ListRgb = List[ColorRgb]
-ListNames = List[str]
+_ListRgb = List[_ColorRgb]
+_ListNames = List[str]
 
-NamedColorHex = Tuple[str, ColorHex]
-NamedColorRgb = Tuple[str, ColorRgb]
+_NamedColorHex = Tuple[str, _ColorHex]
+_NamedColorRgb = Tuple[str, _ColorRgb]
 
-NamedColorHexList = List[NamedColorHex]
-NamedColorRgbList = List[NamedColorRgb]
+_NamedColorHexList = List[_NamedColorHex]
+_NamedColorRgbList = List[_NamedColorRgb]
 
-NameToColorHexDict = Dict[str, ColorHex]
-NameToColorRgbDict = Dict[str, ColorRgb]
+_NameToColorHexDict = Dict[str, _ColorHex]
+_NameToColorRgbDict = Dict[str, _ColorRgb]
 
-ColorHexDict = Dict[str, ColorHex]
-ColorRgbDict = Dict[str, ColorRgb]
+_ColorHexDict = Dict[str, _ColorHex]
+_ColorRgbDict = Dict[str, _ColorRgb]
 
 
 # ========================================================================= #
@@ -65,16 +65,16 @@ _STR_TEMPLATE_VAR_FIELDS = "{% for (field, value) in fields %}{{field}} = {{valu
 _STR_TEMPLATE_INIT_FILE = "{% for name in names %}import {{package}}.{{name}}\n{% endfor %}"
 
 
-class ColorPalette(object):
+class BaseColorPalette(object):
     NAME = None
 
     def __init__(self, name_color_tuples, unique_colors=True):
         assert type(self.NAME) == str, 'Specify the name of the color palette'
-        assert self.NAME == ColorPalette.standardised_name(self.NAME), 'Name must follow rules of python field'
+        assert self.NAME == BaseColorPalette.standardised_name(self.NAME), 'Name must follow rules of python field'
         assert util.is_iterable(name_color_tuples), TypeError(f'Non-Iterable names: {type(name_color_tuples)}')
         # names
         self._names_orig = [name for name, _ in name_color_tuples]
-        self._names, self._conflicts = ColorPalette.generate_unique_names(self._names_orig)
+        self._names, self._conflicts = BaseColorPalette.generate_unique_names(self._names_orig)
         # colors
         self._colors = [Color(color) for _, color in name_color_tuples]
         # sorted
@@ -82,7 +82,7 @@ class ColorPalette(object):
         self._name2index = {name: i for i, name in enumerate(self._names)}
         self._name2color = {name: color for name, color in zip(self._names, self._colors)}
         # validate
-        ColorPalette._assert_names_unique_colors_unique(self._names, self._colors, ignore_colors=not unique_colors)
+        BaseColorPalette._assert_names_unique_colors_unique(self._names, self._colors, ignore_colors=not unique_colors)
 
     def __len__(self):
         return len(self._names_orig)
@@ -111,8 +111,8 @@ class ColorPalette(object):
         return standardised
 
     @staticmethod
-    def generate_unique_names(orig_names: ListNames) -> Tuple[ListNames, Dict[str, Tuple[str, str, int]]]:
-        names = [FileColorPalette.standardised_name(orig) for orig in orig_names]
+    def generate_unique_names(orig_names: _ListNames) -> Tuple[_ListNames, Dict[str, Tuple[str, str, int]]]:
+        names = [BaseUrlColorPalette.standardised_name(orig) for orig in orig_names]
         indices = sorted(range(len(names)), key=lambda i: f'{names[i]}={orig_names[i]}={i}')  # argsort
         # find conflicts & repetitions
         unique, conflicts, stack = [None] * len(orig_names), {}, [(None, None)]
@@ -128,7 +128,7 @@ class ColorPalette(object):
         return unique, conflicts
 
     @staticmethod
-    def _assert_names_unique_colors_unique(name_list: ListNames, color_list: List, ignore_colors=True):
+    def _assert_names_unique_colors_unique(name_list: _ListNames, color_list: List, ignore_colors=True):
         assert len(name_list), len(color_list)
         colors, names = {}, {}
         for name, color in zip(name_list, color_list):
@@ -150,14 +150,14 @@ class ColorPalette(object):
         util.overwrite_file(f'gen/rgb/{self.NAME}.py', self.generate_python(color_type=color_type))
 
 
-class FileColorPalette(ColorPalette):
+class BaseUrlColorPalette(BaseColorPalette):
     URL = None
 
     def __init__(self):
         assert type(self.URL) == str, 'Specify the url of the color dataset'
         super().__init__(self._get_colors_from_data(util.fetch_url(self.URL)))
 
-    def _get_colors_from_data(self, data: str) -> NamedColorRgbList:
+    def _get_colors_from_data(self, data: str) -> _NamedColorRgbList:
         raise NotImplementedError('Override Me!')
 
 
@@ -166,26 +166,26 @@ class FileColorPalette(ColorPalette):
 # ========================================================================= #
 
 
-class ColorPaletteXkcd(FileColorPalette):
+class ColorPaletteXkcd(BaseUrlColorPalette):
     URL = 'https://xkcd.com/color/rgb.txt'
     NAME = 'xkcd'
 
-    def _get_colors_from_data(self, data: str) -> NamedColorHexList:
+    def _get_colors_from_data(self, data: str) -> _NamedColorHexList:
         import re
         pattern = re.compile('^(.+)\t(#[0-9abcdef]{6})')
         return [match for line in data.split('\n') for match in pattern.findall(line)]
 
 
-class ColorPaletteMeodai(FileColorPalette):
+class ColorPaletteMeodai(BaseUrlColorPalette):
     URL ='https://raw.githubusercontent.com/meodai/color-names/master/src/colornames.csv'
     NAME = 'meodai'
 
-    def _get_colors_from_data(self, data: str) -> NamedColorHexList:
+    def _get_colors_from_data(self, data: str) -> _NamedColorHexList:
         import csv
         return [item for item in csv.reader(data.split('\n'))][1:]
 
 
-class ColorPalette3Bit(ColorPalette):
+class ColorPalette3Bit(BaseColorPalette):
     NAME = 'colors_3_bit'
 
     def __init__(self):
@@ -193,7 +193,7 @@ class ColorPalette3Bit(ColorPalette):
         super().__init__(COLORS_3_BIT)
 
 
-class ColorPalette4Bit(ColorPalette):
+class ColorPalette4Bit(BaseColorPalette):
     NAME = 'colors_4_bit'
 
     def __init__(self):
@@ -201,7 +201,7 @@ class ColorPalette4Bit(ColorPalette):
         super().__init__(COLORS_4_BIT)
 
 
-class ColorPalette8Bit(ColorPalette):
+class ColorPalette8Bit(BaseColorPalette):
     NAME = 'colors_8_bit'
 
     def __init__(self):
@@ -209,7 +209,7 @@ class ColorPalette8Bit(ColorPalette):
         super().__init__(COLORS_8_BIT, unique_colors=False)
 
 
-class ColorPalette8BitWikipedia(ColorPalette):
+class ColorPalette8BitWikipedia(BaseColorPalette):
     NAME = 'colors_8_bit_wikipedia'
 
     def __init__(self):
@@ -223,15 +223,15 @@ class ColorPalette8BitWikipedia(ColorPalette):
 
 
 if __name__ == '__main__':
-    COLORS_3_BIT = ColorPalette3Bit()
-    COLORS_4_BIT = ColorPalette4Bit()
-    COLORS_8_BIT = ColorPalette8Bit()
-    COLORS_8_BIT_WIKIPEDIA = ColorPalette8BitWikipedia()
-    COLORS_XKCD = ColorPaletteXkcd()
-    COLOR_MEODIA = ColorPaletteMeodai()
+    _COLORS_3_BIT = ColorPalette3Bit()
+    _COLORS_4_BIT = ColorPalette4Bit()
+    _COLORS_8_BIT = ColorPalette8Bit()
+    _COLORS_8_BIT_WIKIPEDIA = ColorPalette8BitWikipedia()
+    _COLORS_XKCD = ColorPaletteXkcd()
+    _COLOR_MEODIA = ColorPaletteMeodai()
 
-    print(COLORS_8_BIT.generate_python('rgb'))
-    print(COLORS_8_BIT_WIKIPEDIA.generate_python('hex'))
+    print(_COLORS_8_BIT.generate_python('rgb'))
+    print(_COLORS_8_BIT_WIKIPEDIA.generate_python('hex'))
 
 
 # ========================================================================= #

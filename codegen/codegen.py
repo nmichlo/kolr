@@ -23,7 +23,7 @@
 
 from bs4 import BeautifulSoup
 from kolr.util.util import fetch_url, overwrite_file
-from kolr.palette import ColorPalette
+from kolr.palette import BaseColorPalette
 from terminaltables import AsciiTable
 from datetime import datetime
 import re
@@ -50,7 +50,7 @@ def _format_cell_text(text):
 
 def _format_table(table, postfix=None):
     table = [[_format_cell_text(cell.text) for cell in row] for row in table]
-    names = ColorPalette.generate_unique_names(table[0])[0]
+    names = BaseColorPalette.generate_unique_names(table[0])[0]
     postfix = postfix if postfix is not None else ""
     table = [[f'    T{postfix}(', *(f'{name}={cell.__repr__()}{", " if i < len(row) - 1 else ""}' for i, (name, cell) in enumerate(zip(names, row))), '),'] for row in table[1:]]
     table = AsciiTable(table)
@@ -109,7 +109,7 @@ def _get_wikipedia_tables(url):
         *(elem for elem in soup.select_one('div.mw-parser-output').children if elem.name in {'h2', 'h3', 'table'})
     ]
     def _elems_as_name(*elems):
-        return '___'.join([ColorPalette.standardised_name(re.sub('\[[Ee]dit\]', '', elem.text.strip())).strip('_') for elem in elems if elem])
+        return '___'.join([BaseColorPalette.standardised_name(re.sub('\[[Ee]dit\]', '', elem.text.strip())).strip('_') for elem in elems if elem])
     # name stack
     h1, h2, h3, tables = None, None, None, []
     for elem in elems:
@@ -152,7 +152,7 @@ def _save_python_from_wikipedia_tables(page, path='gen'):
     python = _gen_python_from_wikipedia_tables(page)
     print(python)
     os.makedirs(path, exist_ok=True)
-    overwrite_file(os.path.join(path, f'{ColorPalette.standardised_name(page)}.py'), python)
+    overwrite_file(os.path.join(path, f'{BaseColorPalette.standardised_name(page)}.py'), python)
 
 
 # ========================================================================= #
