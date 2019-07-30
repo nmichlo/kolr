@@ -58,7 +58,7 @@ reset_attributes = "\033[20m" ; # resets underline, etc only (not colors)
 
 # TODO: replace with more robust methods in kolr.term.sgr_params
 # TODO: remove duplicated effort and use kolr.term.sgr_params instead
-COLORS = {
+STYLE = {
     "black": black,     "grey": grey,         "bblack": bblack,     "bgrey": bgrey,
     "red": red,         "lred": lred,         "bred": bred,         "blred": blred,
     "green": green,     "lgreen": lgreen,     "bgreen": bgreen,     "blgreen": blgreen,
@@ -81,49 +81,83 @@ COLORS = {
     "reset_attributes": reset_attributes, # resets underline, etc only (not colors)
 }
 
+STYLE_CODES = {
+    black,   grey,     bblack,   bgrey,
+    red,     lred,     bred,     blred,
+    green,   lgreen,   bgreen,   blgreen,
+    yellow,  lyellow,  byellow,  blyellow,
+    blue,    lblue,    bblue,    blblue,
+    magenta, lmagenta, bmagenta, blmagenta,
+    cyan,    lcyan,    bcyan,    blcyan,
+    lgrey,   white,    blgrey,   blwhite,
+
+    bold,      reset_bold,
+    dim,       reset_dim,
+    underline, reset_underline,
+    blink,     reset_blink,
+    reverse,   reset_reverse,
+    hidden,    reset_hidden,
+
+    reset,
+    reset_fg,
+    reset_bg,
+    reset_attributes,
+}
+
 
 # ========================================================================= #
 # Kolr Builder                                                              #
 # ========================================================================= #
 
 
-class Kolr:
+class Kolr(object):
 
-    def __init__(self, *vals, color=None):
+    def __init__(self, *vals, style=None):
         self._stack = []
-        self._color(*vals, color=color)
+        self._style(*vals, style=style)
 
     def __str__(self) -> str:
         return ''.join((f'{c}{s}\033[0m' if c else s) for c, s in self._stack)
     def __repr__(self) -> str:
         return str(self)
 
-    def __add__(self, val): return self._color(val, is_left=False)
-    def __radd__(self, val): return self._color(val, is_left=True)
+    def __add__(self, val): return self._style(val, is_left=False)
+    def __radd__(self, val): return self._style(val, is_left=True)
 
-    def __call__(self, *vals, color=None):
-        return self._color(*vals, color=color)
+    def __call__(self, *vals, style=None):
+        return self._style(*vals, style=style)
 
-    def _color(self, *vals, color=None, is_left=False):
-        if vals:
-            clr = COLORS[color] if color else ''
-            append_stack = []
-            for val in vals:
-                typ = type(val)
-                if typ == str:
-                    append_stack.append((clr, val))
-                elif typ == Kolr:
-                    if clr:
-                        for c, v in val._stack:
-                            append_stack.append((clr+c, v))
-                    else:
-                        append_stack = val._stack
+    def _normalise_style(self, style=None):
+        clr = ''
+        if style:
+            clr = STYLE.get(style, None)
+            if not clr:
+                if style in STYLE_CODES:
+                    clr = style
+                if not clr:
+                    raise Exception(f'Unsupported Style: {style}')
+        return clr
+
+    def _style(self, *vals, style=None, is_left=False):
+        if not vals:
+            return self  # chainable
+        clr = self._normalise_style(style)
+        append_stack = []
+        for val in vals:
+            typ = type(val)
+            if typ == str:
+                append_stack.append((clr, val))
+            elif typ == Kolr:
+                if clr:
+                    for c, v in val._stack:
+                        append_stack.append((clr+c, v))
                 else:
-                    raise TypeError(f'Invalid Type: {typ}')
-            # merge
-            self._stack = (append_stack + self._stack) if is_left else (self._stack + append_stack)
-        # chainable
-        return self
+                    append_stack = val._stack
+            else:
+                raise TypeError(f'Invalid Type: {typ}')
+        # merge
+        self._stack = (append_stack + self._stack) if is_left else (self._stack + append_stack)
+        return self  # chainable
 
 
 # ========================================================================= #
@@ -132,8 +166,8 @@ class Kolr:
 
 
 if __name__ == '__main__':
-    print(Kolr('left ' + ' right' + 'fdsa', color='lgreen'))
-    print(str(Kolr('left ' + Kolr('inner', color='lred')('asdf', color='reset') + ' right', color='lgreen')))
+    print(Kolr('left ' + ' right' + 'fdsa', style='lgreen'))
+    print(str(Kolr('left ' + Kolr('inner', style='lred')('asdf', style='reset') + ' right', style='lgreen')))
 
 # ========================================================================= #
 # END                                                                       #

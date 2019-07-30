@@ -21,7 +21,7 @@
 #  SOFTWARE.
 
 
-from codegen.gen.ansi_escape_code import L_ansi_escape_code___colors___3_or_4_bit
+from kolr.codegen.gen.ansi_escape_code import L_ansi_escape_code___colors___3_or_4_bit
 from kolr.color import Color
 
 

@@ -24,8 +24,10 @@
 from typing import Dict, Tuple, List
 import os
 import re
+
 from jinja2 import Template
 from unidecode import unidecode
+from copy import deepcopy, copy
 from kolr.color import Color
 from kolr.util import util
 
@@ -33,7 +35,6 @@ from kolr.util import util
 # ========================================================================= #
 # Types                                                                     #
 # ========================================================================= #
-
 
 _ColorHex = str
 _ColorRgb = Tuple[int, int, int]
@@ -68,31 +69,30 @@ _STR_TEMPLATE_INIT_FILE = "{% for name in names %}import {{package}}.{{name}}\n{
 class BaseColorPalette(object):
     NAME = None
 
-    def __init__(self, name_color_tuples, unique_colors=True):
+    def __init__(self, name_color_tuples, unique_colors=False):
         assert type(self.NAME) == str, 'Specify the name of the color palette'
         assert self.NAME == BaseColorPalette.standardised_name(self.NAME), 'Name must follow rules of python field'
         assert util.is_iterable(name_color_tuples), TypeError(f'Non-Iterable names: {type(name_color_tuples)}')
         # names
-        self._names_orig = [name for name, _ in name_color_tuples]
-        self._names, self._conflicts = BaseColorPalette.generate_unique_names(self._names_orig)
+        _names_orig = [name for name, _ in name_color_tuples]
+        self._names, _conflicts = BaseColorPalette.generate_unique_names(_names_orig)
         # colors
         self._colors = [Color(color) for _, color in name_color_tuples]
         # sorted
         self._argsorted  = sorted(range(len(self._names)), key=self._names.__getitem__)
         self._name2index = {name: i for i, name in enumerate(self._names)}
-        self._name2color = {name: color for name, color in zip(self._names, self._colors)}
         # validate
         BaseColorPalette._assert_names_unique_colors_unique(self._names, self._colors, ignore_colors=not unique_colors)
 
     def __len__(self):
-        return len(self._names_orig)
+        return len(self._names)
 
     def __getitem__(self, item):
         # TODO global default get type
         if type(item) == int:
             return self._names[self._argsorted[item]]
         elif type(item) == str:
-            return self._name2color[item]
+            return self._colors[self._name2index[item]]
         else:
             raise TypeError('Invalid getter type')
 
@@ -139,6 +139,28 @@ class BaseColorPalette(object):
                 raise KeyError(f'Colors not unique for: {color} -> "{name}" / {colors[color]}')
             colors[color] = name
 
+    def nearest_color(self, color):
+        # import numpy as np
+        # i = np.argmin(np.sum((np.array([c.rgb for c in self._colors]) - np.array(color.rgb)) ** 2, axis=1))
+        # return self._colors[i]
+        rgb = color.rgb
+        closest, dist = None, float('inf')
+        for c in self._colors:
+            r = c.rgb
+            d = ((rgb[0] - r[0]) ** 2 + (rgb[1] - r[1]) ** 2 + (rgb[2] - r[2]) ** 2) ** 0.5
+            if d <= dist:
+                closest, dist = c, d
+            if d == 0:
+                break
+        return Color(closest)
+
+    def as_palette(self, palette) -> 'BaseColorPalette':
+        assert isinstance(palette, BaseColorPalette), 'not a pallette'
+        new_colors = [palette.nearest_color(color) for color in self._colors]
+        new_palette = copy(self)
+        new_palette._colors = new_colors
+        return new_palette
+
     def generate_python(self, color_type='rgb'):
         return Template(f'{_STR_TEMPLATE_SEPARATOR}\n\n{_STR_TEMPLATE_STRING_FIELDS if color_type == "hex" else _STR_TEMPLATE_VAR_FIELDS}').render(
             fields=zip(self, (getattr(self[name], color_type) for name in self)),
@@ -148,6 +170,11 @@ class BaseColorPalette(object):
     def save_python(self, color_type='rgb'):
         os.makedirs(f'gen/{color_type}', exist_ok=True)
         util.overwrite_file(f'gen/rgb/{self.NAME}.py', self.generate_python(color_type=color_type))
+
+    def print(self):
+        for name, (r, g, b) in ((self._names[i], self._colors[i].rgb) for i in self._argsorted):
+            print(f'\033[38;2;{r};{g};{b}m{name}\033[0m')
+        print()
 
 
 class BaseUrlColorPalette(BaseColorPalette):
@@ -230,8 +257,16 @@ if __name__ == '__main__':
     _COLORS_XKCD = ColorPaletteXkcd()
     _COLOR_MEODIA = ColorPaletteMeodai()
 
-    print(_COLORS_8_BIT.generate_python('rgb'))
-    print(_COLORS_8_BIT_WIKIPEDIA.generate_python('hex'))
+    _COLORS_4_BIT.print()
+    print()
+    _COLORS_4_BIT.as_palette(_COLORS_3_BIT).print()
+    print()
+    _COLORS_4_BIT.as_palette(_COLORS_3_BIT).print()
+    print()
+    _COLORS_8_BIT.as_palette(_COLORS_4_BIT).print()
+
+    _COLORS_8_BIT.generate_python('rgb')
+    _COLORS_8_BIT_WIKIPEDIA.generate_python('hex')
 
 
 # ========================================================================= #
