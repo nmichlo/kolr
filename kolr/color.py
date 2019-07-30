@@ -34,18 +34,17 @@ class Color(object):
 
     def __init__(self, color):
         self._rgb = None
-        self._hex = None
 
         # Convert color to correct type
         t = type(color)
         if t == Color:
             self._rgb = color._rgb
         elif t == tuple:
-            assert len(color) == 3
+            assert len(color) == 3 and all(0 <= v <= 255 and type(v) == int for v in color)
             self._rgb = color
         elif t == str:
             assert len(color) == 7 and color[0] == '#'
-            self._hex = color
+            self._rgb = Color.hex_to_rgb(color)
         else:
             raise TypeError(f'Unsupported Type: {t}')
 
@@ -65,14 +64,10 @@ class Color(object):
 
     @property
     def hex(self):
-        if self._hex is None:
-            self._hex = Color.rgb_to_hex(self._rgb)
-        return self._hex
+        return '#%02x%02x%02x' % self._rgb
 
     @property
     def rgb(self):
-        if self._rgb is None:
-            self._rgb = Color.hex_to_rgb(self._hex)
         return self._rgb
 
     @staticmethod
@@ -85,6 +80,7 @@ class Color(object):
     def rgb_to_hex(rgb):
         assert len(rgb) == 3 and all(0 <= v <= 255 for v in rgb)
         return '#%02x%02x%02x' % rgb
+
 
 
 # ========================================================================= #
