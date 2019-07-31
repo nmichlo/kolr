@@ -197,7 +197,6 @@ for sgr in SGR_PARAM_LIST:
 
 
 RgbColor = Tuple[int, int, int]
-HslColor = Tuple[float, int, int]
 
 
 class TermColors(NamedTuple):
@@ -268,7 +267,6 @@ class Color8Bit(NamedTuple):
     code: int
     hex: str
     rgb: RgbColor
-    hsl: HslColor
 
 
 # VARS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
