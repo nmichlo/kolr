@@ -48,11 +48,14 @@ def _format_cell_text(text):
     return text
 
 
-def _format_table(table, postfix=None):
+def _format_table(table, postfix=None, tuples=False):
     table = [[_format_cell_text(cell.text) for cell in row] for row in table]
     names = BaseColorPalette.generate_unique_names(table[0])[0]
     postfix = postfix if postfix is not None else ""
-    table = [[f'    T{postfix}(', *(f'{name}={cell.__repr__()}{", " if i < len(row) - 1 else ""}' for i, (name, cell) in enumerate(zip(names, row))), '),'] for row in table[1:]]
+    if tuples:
+        table = [[f'    (', *(f'{cell.__repr__()}{", " if i < len(row) - 1 else ""}' for i, (name, cell) in enumerate(zip(names, row))), '),'] for row in table[1:]]
+    else:
+        table = [[f'    T{postfix}(', *(f'{name}={cell.__repr__()}{", " if i < len(row) - 1 else ""}' for i, (name, cell) in enumerate(zip(names, row))), '),'] for row in table[1:]]
     table = AsciiTable(table)
     table.outer_border = False
     table.inner_column_border = False
@@ -66,16 +69,20 @@ def _format_table(table, postfix=None):
 def _expand_table(header, rows, skip_fullwidth=False, skip_malformed=True):
     def cspan(c): return int(c.get('colspan', 1))
     def rspan(c): return int(c.get('rowspan', 1))
-
+    # width = len(header)
+    width = sum(cspan(cell) for cell in header)
+    header_row = []
+    for cell in header:
+        header_row.extend([cell] * cspan(cell))
     # Expand
-    table, span_table = [header], [[1] * len(header)]
+    table, span_table = [header_row], [[1] * width]
     for line in rows:
         # if must skip row
         fullwidth, skip = False, False
-        if sum(cspan(cell) for cell in line) > len(header):
+        if sum(cspan(cell) for cell in line) > width:
             fullwidth, skip = True, skip_malformed
             print('Malformed Line:', line)
-        if skip or (skip_fullwidth and fullwidth and len(header) > 1):
+        if skip or (skip_fullwidth and fullwidth and width > 1):
             print('Skipping:', line)
             span_table[-1] = [min(i-1, 1) for i in span_table[-1]]  # adjust previous rows
             continue
@@ -101,8 +108,24 @@ def _expand_table(header, rows, skip_fullwidth=False, skip_malformed=True):
 # ========================================================================= #
 
 
+def _print_traverse(elem, depth=0, max_depth=-1):
+    if depth == 0:
+        print("="*100)
+    if max_depth >= 0 and depth >= max_depth:
+        return
+    if hasattr(elem, 'name'):
+        n, r = "\n", "\\n"
+        print(f'{"  " * depth}{elem.name}: {elem.attrs if hasattr(elem, "attrs") else ""} "{elem.text.replace(n,r) if hasattr(elem, "text") else ""}"')
+    try:
+        for e in elem:
+            _print_traverse(e, depth=depth+1, max_depth=max_depth)
+    except:
+        pass
+    if depth == 0:
+        print("="*100)
 
-def _get_wikipedia_tables(url):
+
+def _get_wikipedia_tables(url, wikitables_only=True):
     soup = BeautifulSoup(fetch_url(url), "html.parser")
     elems = [
         soup.select_one('h1'),
@@ -120,14 +143,17 @@ def _get_wikipedia_tables(url):
         elif elem.name in {'h3'}:
             h3 = elem
         elif elem.name in {'table'}:
-            if 'wikitable' not in elem.attrs['class']:
+            if wikitables_only and 'wikitable' not in elem.attrs['class']:
+                continue
+            table = elem.select_one('tbody')
+            if not table:
                 continue
             name = _elems_as_name(h1, h2, h3, elem.select_one('caption'))
-            tables.append((name, elem))
+            tables.append((name, table))
     return tables
 
 
-def _gen_python_from_wikipedia_tables(page, name=None):
+def _gen_python_from_wikipedia_tables(page, name=None, tuples=False, wikitables_only=True):
     # TODO: this function should be split up
     strings, url = [], f'https://en.wikipedia.org/wiki/{page}'
     name = (url if name is None else name)
@@ -135,21 +161,26 @@ def _gen_python_from_wikipedia_tables(page, name=None):
     time = str(datetime.now().strftime('%Y-%m-%d %H:%M'))
     strings.append(f'\nfrom collections import namedtuple\n\n')
     strings.append(f'\n# {"="*73} #\n# {name}{" "*(73-len(name))} #\n# Generated: {time}{" "*(62-len(time))} #\n# {"="*73} #\n\n\n')
+    # subtables:
+    tables = []
     # get and append tables
-    for (name, table) in _get_wikipedia_tables(url):
+    for (name, table) in _get_wikipedia_tables(url, wikitables_only=wikitables_only):
         # generate table
         header = table.select("tr th")
-        entries = [row.find_all("td") for row in table.select("tr + tr")]
+        entries = [row.select("td") for row in table.select("tr + tr") if not row.select('table')]  # skips first tr, header
+        subtables = [row.select("table") for row in table.select("tr + tr") if row.select('table')]  # skips first tr, header
+        if subtables:
+            print(f'{len(subtables)} Subtables exist for: {name}')
         table = _expand_table(header, entries)
         # append formatted table
-        strings.append(str(_format_table(table, postfix=f'_{name}')))
+        strings.append(str(_format_table(table, postfix=f'_{name}', tuples=tuples)))
         strings.append('\n\n')
     # return
     return ''.join(strings)
 
 
-def _save_python_from_wikipedia_tables(page, path='gen'):
-    python = _gen_python_from_wikipedia_tables(page)
+def _save_python_from_wikipedia_tables(page, path='gen', tuples=False, wikitables_only=True):
+    python = _gen_python_from_wikipedia_tables(page, tuples=tuples, wikitables_only=wikitables_only)
     print(python)
     os.makedirs(path, exist_ok=True)
     overwrite_file(os.path.join(path, f'{BaseColorPalette.standardised_name(page)}.py'), python)
@@ -161,8 +192,8 @@ def _save_python_from_wikipedia_tables(page, path='gen'):
 
 
 if __name__ == '__main__':
-    _save_python_from_wikipedia_tables('ANSI_escape_code', path='gen')
-    _save_python_from_wikipedia_tables('C0_and_C1_control_codes', path='gen')
+    _save_python_from_wikipedia_tables('ANSI_escape_code', path='gen', tuples=False, wikitables_only=True)
+    _save_python_from_wikipedia_tables('C0_and_C1_control_codes', path='gen', tuples=False, wikitables_only=True)
 
 
 # ========================================================================= #
