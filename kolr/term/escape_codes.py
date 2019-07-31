@@ -21,11 +21,14 @@
 #  SOFTWARE.
 
 
+from typing import Tuple, NamedTuple
 from collections import namedtuple
 
-# Escape Character: octal=\033 ∙ hex=\x1B ∙ decimal=27 ∙ keyboard=^[
-ESC = '\033'
 
+# ========================================================================= #
+# Escape Character                                                          #
+# ∙ octal=\033 ∙ hex=\x1B ∙ decimal=27 ∙ keyboard=^[                        #
+# ========================================================================= #
 
 # C1 (8-Bit) Control Characters
 # https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-C1-_8-Bit_-Control-Characters
@@ -47,7 +50,7 @@ OSC   = _CtrlChar(bits7=ESC + ']',  bits8='\x9d', name='OSC',   lname='Operating
 PM    = _CtrlChar(bits7=ESC + '^',  bits8='\x9e', name='PM',    lname='Privacy Message',                                note="")
 APC   = _CtrlChar(bits7=ESC + '_',  bits8='\x9f', name='APC',   lname='Application Program Command',                    note="")
 
-# # Single Character Functions
+ESC = '\033'
 # # https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-Single-character-functions
 _SingleCharFunc = namedtuple('ControlCharacter', ('name', 'code', 'desc'))
 BEL = _SingleCharFunc(name='BEL', code='Ctrl-G', desc="Bell (Ctrl-G).")
@@ -70,11 +73,21 @@ VT  = _SingleCharFunc(name='VT',  code='Ctrl-K', desc="Vertical Tab (Ctrl-K).  T
 # ========================================================================= #
 
 
+
+
+CSI = ESC + '['
+
+
 # ========================================================================= #
 # CSI SEQUENCES (Control Sequence Introducer)                               #
 # ∙ CSI = ESC [ ...                                                         #
 # ∙ https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences            #
 # ========================================================================= #
+
+
+
+
+SGR = CSI + '{code}m'
 
 
 # ========================================================================= #
@@ -180,10 +193,89 @@ for sgr in SGR_PARAM_LIST:
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
 
+# TYPES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
+
+
+RgbColor = Tuple[int, int, int]
+HslColor = Tuple[float, int, int]
+
+
+class TermColors(NamedTuple):
+    vga: RgbColor
+    windows_console: RgbColor
+    windows_powershell: RgbColor
+    windows_10_consolepowershell_6: RgbColor
+    terminal_app: RgbColor
+    putty: RgbColor
+    mirc: RgbColor
+    xterm: RgbColor
+    x: RgbColor
+    ubuntu: RgbColor
+
+
+class Color3Or4Bit(NamedTuple):
+    name: str
+    fg_code: int
+    bg_code: int
+    colors: TermColors
+
+
+# VARS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
+
+
+COLORS_3_BIT = (
+    Color3Or4Bit(name='Black',          fg_code=30, bg_code=40,  colors=TermColors(vga=(0, 0, 0),       windows_console=(0, 0, 0),       windows_powershell=(0, 0, 0),       windows_10_consolepowershell_6=(12, 12, 12),    terminal_app=(0, 0, 0),       putty=(0, 0, 0),       mirc=(0, 0, 0),       xterm=(0, 0, 0),       x=(0, 0, 0),       ubuntu=(1, 1, 1)      )),
+    Color3Or4Bit(name='Red',            fg_code=31, bg_code=41,  colors=TermColors(vga=(170, 0, 0),     windows_console=(128, 0, 0),     windows_powershell=(128, 0, 0),     windows_10_consolepowershell_6=(197, 15, 31),   terminal_app=(194, 54, 33),   putty=(187, 0, 0),     mirc=(127, 0, 0),     xterm=(205, 0, 0),     x=(255, 0, 0),     ubuntu=(222, 56, 43)  )),
+    Color3Or4Bit(name='Green',          fg_code=32, bg_code=42,  colors=TermColors(vga=(0, 170, 0),     windows_console=(0, 128, 0),     windows_powershell=(0, 128, 0),     windows_10_consolepowershell_6=(19, 161, 14),   terminal_app=(37, 188, 36),   putty=(0, 187, 0),     mirc=(0, 147, 0),     xterm=(0, 205, 0),     x=(0, 255, 0),     ubuntu=(57, 181, 74)  )),
+    Color3Or4Bit(name='Yellow',         fg_code=33, bg_code=43,  colors=TermColors(vga=(170, 85, 0),    windows_console=(128, 128, 0),   windows_powershell=(238, 237, 240), windows_10_consolepowershell_6=(193, 156, 0),   terminal_app=(173, 173, 39),  putty=(187, 187, 0),   mirc=(252, 127, 0),   xterm=(205, 205, 0),   x=(255, 255, 0),   ubuntu=(255, 199, 6)  )),
+    Color3Or4Bit(name='Blue',           fg_code=34, bg_code=44,  colors=TermColors(vga=(0, 0, 170),     windows_console=(0, 0, 128),     windows_powershell=(0, 0, 128),     windows_10_consolepowershell_6=(0, 55, 218),    terminal_app=(73, 46, 225),   putty=(0, 0, 187),     mirc=(0, 0, 127),     xterm=(0, 0, 238),     x=(0, 0, 255),     ubuntu=(0, 111, 184)  )),
+    Color3Or4Bit(name='Magenta',        fg_code=35, bg_code=45,  colors=TermColors(vga=(170, 0, 170),   windows_console=(128, 0, 128),   windows_powershell=(1, 36, 86),     windows_10_consolepowershell_6=(136, 23, 152),  terminal_app=(211, 56, 211),  putty=(187, 0, 187),   mirc=(156, 0, 156),   xterm=(205, 0, 205),   x=(255, 0, 255),   ubuntu=(118, 38, 113) )),
+    Color3Or4Bit(name='Cyan',           fg_code=36, bg_code=46,  colors=TermColors(vga=(0, 170, 170),   windows_console=(0, 128, 128),   windows_powershell=(0, 128, 128),   windows_10_consolepowershell_6=(58, 150, 221),  terminal_app=(51, 187, 200),  putty=(0, 187, 187),   mirc=(0, 147, 147),   xterm=(0, 205, 205),   x=(0, 255, 255),   ubuntu=(44, 181, 233) )),
+    Color3Or4Bit(name='White',          fg_code=37, bg_code=47,  colors=TermColors(vga=(170, 170, 170), windows_console=(192, 192, 192), windows_powershell=(192, 192, 192), windows_10_consolepowershell_6=(204, 204, 204), terminal_app=(203, 204, 205), putty=(187, 187, 187), mirc=(210, 210, 210), xterm=(229, 229, 229), x=(255, 255, 255), ubuntu=(204, 204, 204))),
+)
+
+COLORS_4_BIT_EXTENSION = (
+    Color3Or4Bit(name='Bright Black',   fg_code=90, bg_code=100, colors=TermColors(vga=(85, 85, 85),    windows_console=(128, 128, 128), windows_powershell=(128, 128, 128), windows_10_consolepowershell_6=(118, 118, 118), terminal_app=(129, 131, 131), putty=(85, 85, 85),    mirc=(127, 127, 127), xterm=(127, 127, 127), x=None,              ubuntu=(128, 128, 128))),
+    Color3Or4Bit(name='Bright Red',     fg_code=91, bg_code=101, colors=TermColors(vga=(255, 85, 85),   windows_console=(255, 0, 0),     windows_powershell=(255, 0, 0),     windows_10_consolepowershell_6=(231, 72, 86),   terminal_app=(252, 57, 31),   putty=(255, 85, 85),   mirc=(255, 0, 0),     xterm=(255, 0, 0),     x=None,              ubuntu=(255, 0, 0)    )),
+    Color3Or4Bit(name='Bright Green',   fg_code=92, bg_code=102, colors=TermColors(vga=(85, 255, 85),   windows_console=(0, 255, 0),     windows_powershell=(0, 255, 0),     windows_10_consolepowershell_6=(22, 198, 12),   terminal_app=(49, 231, 34),   putty=(85, 255, 85),   mirc=(0, 252, 0),     xterm=(0, 255, 0),     x=(144, 238, 144),   ubuntu=(0, 255, 0)    )),
+    Color3Or4Bit(name='Bright Yellow',  fg_code=93, bg_code=103, colors=TermColors(vga=(255, 255, 85),  windows_console=(255, 255, 0),   windows_powershell=(255, 255, 0),   windows_10_consolepowershell_6=(249, 241, 165), terminal_app=(234, 236, 35),  putty=(255, 255, 85),  mirc=(255, 255, 0),   xterm=(255, 255, 0),   x=(255, 255, 224),   ubuntu=(255, 255, 0)  )),
+    Color3Or4Bit(name='Bright Blue',    fg_code=94, bg_code=104, colors=TermColors(vga=(85, 85, 255),   windows_console=(0, 0, 255),     windows_powershell=(0, 0, 255),     windows_10_consolepowershell_6=(59, 120, 255),  terminal_app=(88, 51, 255),   putty=(85, 85, 255),   mirc=(0, 0, 252),     xterm=(92, 92, 255),   x=(173, 216, 230),   ubuntu=(0, 0, 255)    )),
+    Color3Or4Bit(name='Bright Magenta', fg_code=95, bg_code=105, colors=TermColors(vga=(255, 85, 255),  windows_console=(255, 0, 255),   windows_powershell=(255, 0, 255),   windows_10_consolepowershell_6=(180, 0, 158),   terminal_app=(249, 53, 248),  putty=(255, 85, 255),  mirc=(255, 0, 255),   xterm=(255, 0, 255),   x=None,              ubuntu=(255, 0, 255)  )),
+    Color3Or4Bit(name='Bright Cyan',    fg_code=96, bg_code=106, colors=TermColors(vga=(85, 255, 255),  windows_console=(0, 255, 255),   windows_powershell=(0, 255, 255),   windows_10_consolepowershell_6=(97, 214, 214),  terminal_app=(20, 240, 240),  putty=(85, 255, 255),  mirc=(0, 255, 255),   xterm=(0, 255, 255),   x=(224, 255, 255),   ubuntu=(0, 255, 255)  )),
+    Color3Or4Bit(name='Bright White',   fg_code=97, bg_code=107, colors=TermColors(vga=(255, 255, 255), windows_console=(255, 255, 255), windows_powershell=(255, 255, 255), windows_10_consolepowershell_6=(242, 242, 242), terminal_app=(233, 235, 235), putty=(255, 255, 255), mirc=(255, 255, 255), xterm=(255, 255, 255), x=None,              ubuntu=(255, 255, 255))),
+)
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 # 8 BIT                                                                     #
+# ∙   0->  7: standard colors (as in ESC [ 30–37 m)                         #
+# ∙   8-> 15: high intensity colors (as in ESC [ 90–97 m)                   #
+# ∙  16->231: 6×6×6 cube (216 colors): 16 + 36*r + 6*g + b (0<=r, g, b<=5)  #
+#             0=0x00, 95=0x5F, 135=0x87, 175=0xAF, 215=0xD7, 255=0xFF       #
+# ∙ 232->255: grayscale from black to white in 24 steps (3% to 97%)         #
 # ∙ https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit                    #
+# ∙ https://jonasjacek.github.io/colors/data.json                           #
+# ∙ https://github.com/sindresorhus/xterm-colors                            #
+# ∙ https://gist.github.com/jasonm23/2868981                                #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+
+# TYPES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
+
+
+class Color8Bit(NamedTuple):
+    name: str
+    code: int
+    hex: str
+    rgb: RgbColor
+    hsl: HslColor
+
+
+# VARS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
+
+
+from kolr.term.rgb256 import COLORS_8_BIT
+COLORS_8_BIT = COLORS_8_BIT
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #

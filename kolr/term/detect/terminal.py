@@ -26,8 +26,6 @@
 # ========================================================================= #
 
 
-from kolr.term.detect.color_support import IS_3_BIT
-
 # Valid TERMINAL_EMULATOR options:
 CODE__JETBRAINS_JEDITERM = 'JetBrains-JediTerm'  # TERMINAL_EMULATOR=JetBrains-JediTerm, TERM=xterm-256color
 
