@@ -39,6 +39,8 @@ ESC = '\033'
 # ∙ ESC ...                                                                 #
 # ∙ https://invisible-island.net/xterm/ctlseqs/ctlseqs.html                 #
 # ∙ https://en.wikipedia.org/wiki/ANSI_escape_code#Escape_sequences         #
+# ∙ http://www.termsys.demon.co.uk/vtansi.htm                               #
+# ∙ https://wiki.bash-hackers.org/scripting/terminalcodes                   #
 # ========================================================================= #
 
 

@@ -121,6 +121,36 @@ DETECTED_TERMINAL = detect_terminal()
 
 
 # ========================================================================= #
+# TERMINAL COLORS                                                           #
+# ========================================================================= #
+
+
+_4_BIT_COLOR_INFO = [
+    ('Black',          {'vga': (0, 0, 0),       'windows_console': (0, 0, 0),       'windows_powershell': (0, 0, 0),       'windows_10_consolepowershell_6': (12, 12, 12),    'terminal_app': (0, 0, 0),       'putty': (0, 0, 0),       'mirc': (0, 0, 0),       'xterm': (0, 0, 0),       'x': (0, 0, 0),       'ubuntu': (1, 1, 1)      }),
+    ('Red',            {'vga': (170, 0, 0),     'windows_console': (128, 0, 0),     'windows_powershell': (128, 0, 0),     'windows_10_consolepowershell_6': (197, 15, 31),   'terminal_app': (194, 54, 33),   'putty': (187, 0, 0),     'mirc': (127, 0, 0),     'xterm': (205, 0, 0),     'x': (255, 0, 0),     'ubuntu': (222, 56, 43)  }),
+    ('Green',          {'vga': (0, 170, 0),     'windows_console': (0, 128, 0),     'windows_powershell': (0, 128, 0),     'windows_10_consolepowershell_6': (19, 161, 14),   'terminal_app': (37, 188, 36),   'putty': (0, 187, 0),     'mirc': (0, 147, 0),     'xterm': (0, 205, 0),     'x': (0, 255, 0),     'ubuntu': (57, 181, 74)  }),
+    ('Yellow',         {'vga': (170, 85, 0),    'windows_console': (128, 128, 0),   'windows_powershell': (238, 237, 240), 'windows_10_consolepowershell_6': (193, 156, 0),   'terminal_app': (173, 173, 39),  'putty': (187, 187, 0),   'mirc': (252, 127, 0),   'xterm': (205, 205, 0),   'x': (255, 255, 0),   'ubuntu': (255, 199, 6)  }),
+    ('Blue',           {'vga': (0, 0, 170),     'windows_console': (0, 0, 128),     'windows_powershell': (0, 0, 128),     'windows_10_consolepowershell_6': (0, 55, 218),    'terminal_app': (73, 46, 225),   'putty': (0, 0, 187),     'mirc': (0, 0, 127),     'xterm': (0, 0, 238),     'x': (0, 0, 255),     'ubuntu': (0, 111, 184)  }),
+    ('Magenta',        {'vga': (170, 0, 170),   'windows_console': (128, 0, 128),   'windows_powershell': (1, 36, 86),     'windows_10_consolepowershell_6': (136, 23, 152),  'terminal_app': (211, 56, 211),  'putty': (187, 0, 187),   'mirc': (156, 0, 156),   'xterm': (205, 0, 205),   'x': (255, 0, 255),   'ubuntu': (118, 38, 113) }),
+    ('Cyan',           {'vga': (0, 170, 170),   'windows_console': (0, 128, 128),   'windows_powershell': (0, 128, 128),   'windows_10_consolepowershell_6': (58, 150, 221),  'terminal_app': (51, 187, 200),  'putty': (0, 187, 187),   'mirc': (0, 147, 147),   'xterm': (0, 205, 205),   'x': (0, 255, 255),   'ubuntu': (44, 181, 233) }),
+    ('White',          {'vga': (170, 170, 170), 'windows_console': (192, 192, 192), 'windows_powershell': (192, 192, 192), 'windows_10_consolepowershell_6': (204, 204, 204), 'terminal_app': (203, 204, 205), 'putty': (187, 187, 187), 'mirc': (210, 210, 210), 'xterm': (229, 229, 229), 'x': (255, 255, 255), 'ubuntu': (204, 204, 204)}),
+    ('Bright Black',   {'vga': (85, 85, 85),    'windows_console': (128, 128, 128), 'windows_powershell': (128, 128, 128), 'windows_10_consolepowershell_6': (118, 118, 118), 'terminal_app': (129, 131, 131), 'putty': (85, 85, 85),    'mirc': (127, 127, 127), 'xterm': (127, 127, 127), 'x': None,            'ubuntu': (128, 128, 128)}),
+    ('Bright Red',     {'vga': (255, 85, 85),   'windows_console': (255, 0, 0),     'windows_powershell': (255, 0, 0),     'windows_10_consolepowershell_6': (231, 72, 86),   'terminal_app': (252, 57, 31),   'putty': (255, 85, 85),   'mirc': (255, 0, 0),     'xterm': (255, 0, 0),     'x': None,            'ubuntu': (255, 0, 0)    }),
+    ('Bright Green',   {'vga': (85, 255, 85),   'windows_console': (0, 255, 0),     'windows_powershell': (0, 255, 0),     'windows_10_consolepowershell_6': (22, 198, 12),   'terminal_app': (49, 231, 34),   'putty': (85, 255, 85),   'mirc': (0, 252, 0),     'xterm': (0, 255, 0),     'x': (144, 238, 144), 'ubuntu': (0, 255, 0)    }),
+    ('Bright Yellow',  {'vga': (255, 255, 85),  'windows_console': (255, 255, 0),   'windows_powershell': (255, 255, 0),   'windows_10_consolepowershell_6': (249, 241, 165), 'terminal_app': (234, 236, 35),  'putty': (255, 255, 85),  'mirc': (255, 255, 0),   'xterm': (255, 255, 0),   'x': (255, 255, 224), 'ubuntu': (255, 255, 0)  }),
+    ('Bright Blue',    {'vga': (85, 85, 255),   'windows_console': (0, 0, 255),     'windows_powershell': (0, 0, 255),     'windows_10_consolepowershell_6': (59, 120, 255),  'terminal_app': (88, 51, 255),   'putty': (85, 85, 255),   'mirc': (0, 0, 252),     'xterm': (92, 92, 255),   'x': (173, 216, 230), 'ubuntu': (0, 0, 255)    }),
+    ('Bright Magenta', {'vga': (255, 85, 255),  'windows_console': (255, 0, 255),   'windows_powershell': (255, 0, 255),   'windows_10_consolepowershell_6': (180, 0, 158),   'terminal_app': (249, 53, 248),  'putty': (255, 85, 255),  'mirc': (255, 0, 255),   'xterm': (255, 0, 255),   'x': None,            'ubuntu': (255, 0, 255)  }),
+    ('Bright Cyan',    {'vga': (85, 255, 255),  'windows_console': (0, 255, 255),   'windows_powershell': (0, 255, 255),   'windows_10_consolepowershell_6': (97, 214, 214),  'terminal_app': (20, 240, 240),  'putty': (85, 255, 255),  'mirc': (0, 255, 255),   'xterm': (0, 255, 255),   'x': (224, 255, 255), 'ubuntu': (0, 255, 255)  }),
+    ('Bright White',   {'vga': (255, 255, 255), 'windows_console': (255, 255, 255), 'windows_powershell': (255, 255, 255), 'windows_10_consolepowershell_6': (242, 242, 242), 'terminal_app': (233, 235, 235), 'putty': (255, 255, 255), 'mirc': (255, 255, 255), 'xterm': (255, 255, 255), 'x': None,            'ubuntu': (255, 255, 255)}),
+]
+
+
+def get_detected_4bit_colors():
+    term = DETECTED_TERMINAL if (DETECTED_TERMINAL in _4_BIT_COLOR_INFO[0][1]) else 'xterm'
+    return [(name, colors[term]) for name, colors in _4_BIT_COLOR_INFO]
+
+
+# ========================================================================= #
 # END                                                                       #
 # ========================================================================= #
 

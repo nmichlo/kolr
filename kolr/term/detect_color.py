@@ -39,7 +39,7 @@
 # ========================================================================= #
 
 
-# Valid termina color modes
+# Valid terminal color modes
 CODE_MONO   = 0x0
 CODE_3_BIT  = 0x7
 CODE_4_BIT  = 0xF

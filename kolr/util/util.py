@@ -51,6 +51,36 @@ def fetch_url(url):
 def is_iterable(val):
     try:
         for i in val:
-            return True
+            break
+        return True
     except:
         return False
+
+
+# ========================================================================= #
+# Decorators                                                                #
+# ========================================================================= #
+
+
+class cached_property(object):
+    """
+    A property that is only computed once per object instance, it
+    then replaces itself with an ordinary attribute value.
+    Deleting the attribute forces it to recompute.
+    """
+
+    def __init__(self, func):
+        self.__doc__ = getattr(func, '__doc__')
+        self.func = func
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+        value = self.func(obj)
+        obj.__dict__[self.func.__name__] = value
+        return value
+
+
+# ========================================================================= #
+# END                                                                       #
+# ========================================================================= #

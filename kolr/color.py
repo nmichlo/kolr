@@ -25,6 +25,11 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
+from kolr.term.detect_color import CODE_24_BIT, CODE_3_BIT, CODE_4_BIT, CODE_8_BIT, DETECTED_CODE
+from kolr.term.escape_codes import sgr, clr
+from kolr.util.util import cached_property
+
+
 # ========================================================================= #
 # COLOR                                                                     #
 # ========================================================================= #
@@ -34,6 +39,8 @@ class Color(object):
     """
     Basic color object that supports conversion between rgb and hex values.
     Computed values are cached.
+
+    TODO: instead of cache_property, this should use flywheel pattern and color dictionaries
     """
 
     def __init__(self, color):
@@ -47,7 +54,6 @@ class Color(object):
             assert len(color) == 3 and all(0 <= v <= 255 and type(v) == int for v in color)
             self._rgb = color
         elif t == str:
-            assert len(color) == 7 and color[0] == '#'
             self._rgb = Color.hex_to_rgb(color)
         else:
             raise TypeError(f'Unsupported Type: {t}')
@@ -67,12 +73,12 @@ class Color(object):
         return str(self)
 
     @property
-    def hex(self):
-        return '#%02x%02x%02x' % self._rgb
-
-    @property
     def rgb(self):
         return self._rgb
+
+    @cached_property
+    def hex(self):
+        return '#%02x%02x%02x' % self._rgb
 
     @staticmethod
     def hex_to_rgb(hex):
@@ -85,6 +91,67 @@ class Color(object):
         assert len(rgb) == 3 and all(0 <= v <= 255 for v in rgb)
         return '#%02x%02x%02x' % rgb
 
+    def escape_code(self, colors=DETECTED_CODE, bg=False):
+        if colors == CODE_3_BIT:
+            from kolr.palette import COLOR_PALETTE_3_BIT
+            idx = COLOR_PALETTE_3_BIT.nearest_index(self)
+            return clr.bg3(idx) if bg else clr.fg3(idx)
+        elif colors == CODE_4_BIT:
+            from kolr.palette import COLOR_PALETTE_4_BIT
+            idx = COLOR_PALETTE_4_BIT.nearest_index(self)
+            return clr.bg4(idx) if bg else clr.fg4(idx)
+        elif colors == CODE_8_BIT:
+            from kolr.palette import COLOR_PALETTE_8_BIT
+            idx = COLOR_PALETTE_8_BIT.nearest_index(self)
+            return clr.bg8(idx) if bg else clr.fg8(idx)
+        elif colors == CODE_24_BIT:
+            return sgr.bg_select(self.rgb) if bg else sgr.fg_select(self.rgb)
+        else:
+            raise KeyError('Invalid Terminal Colors')
+
+    @cached_property
+    def esc(self):
+        return self.escape_code(DETECTED_CODE, bg=False)
+
+    @cached_property
+    def esc_fg(self):
+        return self.escape_code(DETECTED_CODE, bg=False)
+
+    @cached_property
+    def esc_bg(self):
+        return self.escape_code(DETECTED_CODE, bg=True)
+
+    @cached_property
+    def fg3(self):
+        return self.escape_code(CODE_3_BIT, bg=False)
+
+    @cached_property
+    def bg3(self):
+        return self.escape_code(CODE_3_BIT, bg=True)
+
+    @cached_property
+    def fg4(self):
+        return self.escape_code(CODE_4_BIT, bg=False)
+
+    @cached_property
+    def bg4(self):
+        return self.escape_code(CODE_4_BIT, bg=True)
+
+    @cached_property
+    def fg8(self):
+        return self.escape_code(CODE_8_BIT, bg=False)
+
+    @cached_property
+    def bg8(self):
+        return self.escape_code(CODE_8_BIT, bg=True)
+
+    @cached_property
+    def fg24(self):
+        return self.escape_code(CODE_24_BIT, bg=False)
+
+    @cached_property
+    def bg24(self):
+        return self.escape_code(CODE_24_BIT, bg=True)
 
 
 # ========================================================================= #
