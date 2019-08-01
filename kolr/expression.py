@@ -1,5 +1,4 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
-#
 #  MIT License
 #
 #  Copyright (c) 2019 Nathan Juraj Michlo
@@ -21,15 +20,15 @@
 #  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
-#
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+
+from kolr.palette import COLOR_PALETTE_MEODAI
+from kolr.term import detect_color
 
 
 # ========================================================================= #
 # Kolr Builder                                                              #
 # ========================================================================= #
-from kolr.palette import COLOR_PALETTE_MEODAI
-from kolr.term import detect_color
 
 
 class Kolr(object):
