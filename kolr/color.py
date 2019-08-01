@@ -25,7 +25,7 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
-from kolr.term.detect_color import CODE_24_BIT, CODE_3_BIT, CODE_4_BIT, CODE_8_BIT, DETECTED_CODE
+from kolr.term.detect_color import CODE_24_BIT, CODE_3_BIT, CODE_4_BIT, CODE_8_BIT, DETECTED_CODE, CODE_MONO
 from kolr.term.escape_codes import sgr, clr
 from kolr.util.util import cached_property
 
@@ -92,7 +92,9 @@ class Color(object):
         return '#%02x%02x%02x' % rgb
 
     def escape_code(self, colors=DETECTED_CODE, bg=False):
-        if colors == CODE_3_BIT:
+        if colors == CODE_MONO:
+            return ''
+        elif colors == CODE_3_BIT:
             from kolr.palette import COLOR_PALETTE_3_BIT
             idx = COLOR_PALETTE_3_BIT.nearest_index(self)
             return clr.bg3(idx) if bg else clr.fg3(idx)
@@ -110,15 +112,11 @@ class Color(object):
             raise KeyError('Invalid Terminal Colors')
 
     @cached_property
-    def esc(self):
+    def fg(self):
         return self.escape_code(DETECTED_CODE, bg=False)
 
     @cached_property
-    def esc_fg(self):
-        return self.escape_code(DETECTED_CODE, bg=False)
-
-    @cached_property
-    def esc_bg(self):
+    def bg(self):
         return self.escape_code(DETECTED_CODE, bg=True)
 
     @cached_property

@@ -91,6 +91,9 @@ class BaseColorPalette(object):
             return self._colors[self._name2index[item]]
         raise TypeError('Invalid getter type')
 
+    def __contains__(self, item):
+        return item in self._name2index
+
     @staticmethod
     def standardised_name(name: str):
         if not name:
