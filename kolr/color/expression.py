@@ -22,7 +22,8 @@
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
-from kolr.palette import COLOR_PALETTE_MEODAI
+
+from kolr.color.palette import COLOR_PALETTE_MEODAI
 from kolr.term import detect_color
 
 

@@ -28,7 +28,9 @@ from typing import Dict, Tuple, List, Union
 import re
 from unidecode import unidecode
 from copy import copy
-from kolr.color import Color
+
+import kolr
+from kolr.color.color import Color
 from kolr.term.detect_term import get_detected_4bit_colors
 from kolr.term.escape_codes import sgr
 from kolr.util import util

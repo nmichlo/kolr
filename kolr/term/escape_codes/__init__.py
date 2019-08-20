@@ -21,3 +21,8 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+
+import kolr.term.escape_codes.clr
+import kolr.term.escape_codes.csi
+import kolr.term.escape_codes.esc
+import kolr.term.escape_codes.sgr
