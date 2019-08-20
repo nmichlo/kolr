@@ -38,6 +38,7 @@ def overwrite_file(file, string):
     return string
 
 
+# TODO: remove cachier dependency
 @cachier(stale_after=datetime.timedelta(days=7))
 def fetch_url(url):
     import urllib.request
@@ -69,6 +70,8 @@ class cached_property(object):
     A property that is only computed once per object instance, it
     then replaces itself with an ordinary attribute value.
     Deleting the attribute forces it to recompute.
+
+    Based on: https://www.pydanny.com/cached-property.html
     """
 
     def __init__(self, func):
