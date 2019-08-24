@@ -21,15 +21,16 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
-
-
+import atexit
 import datetime
+import sys
 from cachier import cachier
 
 
 # ========================================================================= #
 # File Util                                                                 #
 # ========================================================================= #
+from kolr.util.events import Observable
 
 
 def overwrite_file(file, string):
@@ -84,6 +85,48 @@ class cached_property(object):
         value = self.func(obj)
         obj.__dict__[self.func.__name__] = value
         return value
+
+
+# ========================================================================= #
+# Singleton                                                                 #
+# ========================================================================= #
+
+
+_NONE = object()
+
+
+class Singleton(object):
+    """
+    Baseclass version of a singleton.
+    - This can easily be overridden by a base class so not recommended
+    """
+    __instance = _NONE
+    def __new__(cls, *args, **kwargs):
+        if cls.__instance is _NONE:
+            cls.__instance = object.__new__(cls, *args, **kwargs)
+        return cls.__instance
+
+
+class SingletonMeta(type):
+    """
+    Metaclass version of a singleton.
+    """
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        instance = cls._instances.get(cls, _NONE)
+        if instance is _NONE:
+            instance = super(SingletonMeta, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = instance
+        return instance
+
+
+def singleton(cls):
+    """
+    Singleton decorator wrapping the class with SingletonMeta
+    """
+    class Inner(cls, metaclass=SingletonMeta):
+        pass
+    return Inner
 
 
 # ========================================================================= #
