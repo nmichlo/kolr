@@ -21,13 +21,18 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+
+
 import time
 
 
 class RenderLoop(object):
 
-    def __init__(self, frame_rate=30):
-        self._frame_time = 1 / frame_rate
+    def __init__(self, frame_rate=10, tick_rate=5, max_frame_skip=0):
+        max_frame_skip = float('inf') if max_frame_skip < 0 else max_frame_skip
+        self._frame_time = 1 / frame_rate if frame_rate > 0 else float('inf')
+        self._tick_time = 1 / tick_rate if tick_rate > 0 else float('inf')
+        self._max_frame_skip = max_frame_skip
         self._running = False
 
     def start(self):
@@ -44,27 +49,45 @@ class RenderLoop(object):
 
     def _run(self):
         assert not self._running
-        self._pre_loop()
+        self._on_loop_start()
 
-        self._running, last_t = True, time.time_ns()
+        self._running = True
+        ave_time, sleep, lag, last_time = 0, 0, 0, time.time()
+
         while self._running:
-            # update time
-            t = time.time_ns()
-            last_t, delta = t, (t - last_t) / 1_000_000_000
-            # Update
-            self._on_loop(delta)
-            # update sleep
-            sleep = self._frame_time - delta
+            t = time.time()
+            diff, last_time = t - last_time, t
+            # EVENTS
+            self._running = self._on_loop_event()
+            # UPDATE
+            lag += diff
+            skipped_frames = 0
+            while lag >= self._tick_time and skipped_frames <= self._max_frame_skip:
+                skipped_frames += 1
+                lag -= self._tick_time
+                self._on_loop_update()
+            # RENDER
+            self._on_loop_render(lag / self._tick_time)   # interpolate between updates
+            # RENDER SLEEP
+            ave_time = (ave_time + diff) / 2
+            sleep_error, last_proc_time = ave_time - self._frame_time, diff - sleep
+            sleep = max((self._frame_time - last_proc_time) - sleep_error, 0)
             if sleep > 0:
                 time.sleep(sleep)
 
-        self._post_loop()
+        self._on_loop_end()
 
-    def _pre_loop(self):
+    def _on_loop_start(self):
         raise NotImplementedError()
 
-    def _on_loop(self, delta) -> bool:
+    def _on_loop_event(self) -> bool:
         raise NotImplementedError()
 
-    def _post_loop(self):
+    def _on_loop_update(self):
+        raise NotImplementedError()
+
+    def _on_loop_render(self, delta):
+        raise NotImplementedError()
+
+    def _on_loop_end(self):
         raise NotImplementedError()

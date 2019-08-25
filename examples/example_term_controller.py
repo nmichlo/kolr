@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     k, (w, h), (x, y) = None, (None, None), (None, None)
 
-    screen = TerminalController()
+    screen = TerminalController(frame_rate=10)
 
     @screen.on(EVENT_KEY)
     def key_callback(key):
@@ -44,6 +44,11 @@ if __name__ == '__main__':
         global w, h
         w = _w
         h = _h
+
+    @screen.on(EVENT_MOUSE)
+    def render_callback(event):
+        global x, y
+        x = event
 
     @screen.on(EVENT_RENDER)
     def render_callback(delta):

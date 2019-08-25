@@ -22,31 +22,14 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
-
-
-import atexit
-import curses
-import os
-import time
+from kolr.term.interface import TerminalInterface
 from kolr.util.events import Emitter
 from kolr.term import escape_codes as ec
+from kolr.util.loop import RenderLoop
 from sys import stdout, stdin, stderr
 import readchar
-from kolr.util.loop import RenderLoop
-
-
-# ========================================================================= #
-# GET CHAR                                                                  #
-# ========================================================================= #
-
-
-"""
-Originally used: http://code.activestate.com/recipes/134892
-But does not support unicode properly.
-Now using 'readchar' library or curses instead.
-
-TODO: goal is to only use the standard library
-"""
+import os
+import atexit
 
 
 # ========================================================================= #
@@ -58,16 +41,18 @@ EVENT_RESIZE = 'resize'
 EVENT_MOUSE = 'mouse'
 EVENT_KEY = 'key'
 EVENT_RENDER = 'render'
+EVENT_UPDATE = 'update'
 
 
 class TerminalController(RenderLoop):
 
-    def __init__(self, frame_rate=10):
-        super().__init__(frame_rate)
-        # curses
-        self._stdscr = None
+    def __init__(self, frame_rate=10, tick_rate=0):
+        super().__init__(frame_rate=frame_rate, tick_rate=tick_rate, max_frame_skip=-1)
         # callbacks TODO: replace with event manager
         self._emitter = Emitter([EVENT_RESIZE, EVENT_MOUSE, EVENT_KEY, EVENT_RENDER])
+        # loop vars
+        self._term_size = (None, None)
+        self._term_interface = TerminalInterface()
 
     # - - - - - - - - - - - - - - - - EVENT - - - - - - - - - - - - - - - - #
 
@@ -80,28 +65,22 @@ class TerminalController(RenderLoop):
     # - - - - - - - - - - - - - - - -NCURSES- - - - - - - - - - - - - - - - #
 
     def _initialise(self):
-        # similar to curses.wrapper
-        if self._stdscr is not None:
-            raise RuntimeError('TerminalController already begun.')
-        self._stdscr = curses.initscr()
-        # try - same as curses.wrapper
-        curses.noecho()
-        curses.cbreak()
-        self._stdscr.keypad(True)
-        try:
-            curses.start_color()
-        except:
-            print('Color initialisation failed')
+        # Raw Input
+        self._term_interface.init_term()
+        # CSI Params
+        # stdout.write(ec.csi.CH)   # Cursor        : Hide
+        # stdout.write(ec.csi.BPE)  # Bracket Paste : Enable
+        # stdout.write(ec.csi.SBE)  # Screen Buffer : Enable
+        # stdout.flush()
 
     def _finalise(self):
-        # similar to curses.wrapper
-        if self._stdscr is not None:
-            self._stdscr.keypad(False)
-        curses.echo()
-        curses.nocbreak()
-        curses.endwin()
-        # delete var
-        self._stdscr = None
+        # CSI Params
+        # stdout.write(ec.csi.SBD)  # Screen Buffer : Disable
+        # stdout.write(ec.csi.BPD)  # Bracket Paste : Disable
+        # stdout.write(ec.csi.CS)   # Cursor        : Show
+        # stdout.flush()
+        # Raw Input
+        self._term_interface.reset_term()
 
     def _exit_finalise(self):
         self._finalise()
@@ -109,48 +88,55 @@ class TerminalController(RenderLoop):
 
     # - - - - - - - - - - - - - - - -LOOPING- - - - - - - - - - - - - - - - #
 
-    def _pre_loop(self):
+    def _on_loop_start(self):
         self._initialise()
         atexit.register(self._exit_finalise)
 
-    def _on_loop(self, delta) -> bool:
-        # KEYS
-        while True:
-            self._stdscr.nodelay(True)
-            key = self._stdscr.getch()
-            if key == -1:
-                break
-            elif key == curses.KEY_RESIZE:
-                h, w = self._stdscr.getmaxyx()
-                if curses.LINES != h or curses.COLS != w:
-                    curses.resizeterm(h, w)
-                    self._emitter.emit(EVENT_RESIZE, w, h)
-                pass
-            elif key == curses.KEY_MOUSE:
-                self._emitter.emit(EVENT_MOUSE, curses.getmouse())
-            else:
-                self._emitter.emit(EVENT_KEY, key)
-        # RENDER
+    def _on_loop_event(self) -> bool:
+        self._process_events()
+        return True
+
+    def _process_events(self):
+        # TERMINAL SIZE
+        term_size = os.get_terminal_size()
+        if term_size != self._term_size:
+            self._term_size = term_size
+            self._emitter.emit(EVENT_RESIZE, term_size[0], term_size[1])  # w, h
+        # KEY PRESSES
+        while self._term_interface.has_char():
+            self._emitter.emit(EVENT_KEY, readchar.readkey(self._term_interface.get_char))
+        # MOUSE PRESSES
+        pass
+        # CONTINUE RUNNING
+        return True
+
+    def _on_loop_update(self):
+        self._process_events()
+        self._emitter.emit(EVENT_UPDATE)
+
+    def _on_loop_render(self, delta):
         self._emitter.emit(EVENT_RENDER, delta)
 
-    def _post_loop(self):
+    def _on_loop_end(self):
         atexit.unregister(self._exit_finalise)
         self._finalise()
 
     # - - - - - - - - - - - - - - - INTERFACE - - - - - - - - - - - - - - - #
 
     def clear(self):
-        self._stdscr.clear()
+        stdout.write(ec.csi.ed(2))
 
     def write_str(self, string, x=0, y=0):
-        self._stdscr.addstr(y, x, string)
+        stdout.write(ec.csi.cup(y + 1, x + 1))
+        stdout.write(string)
 
     def write_char(self, char, x=0, y=0):
         assert len(char) == 1
-        self._stdscr.addstr(y, x, char)
+        self.write_str(char, x + 1, y + 1)
 
     def flush(self):
-        self._stdscr.refresh()
+        stdout.flush()
+
 
 # ========================================================================= #
 # END                                                                       #
