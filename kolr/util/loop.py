@@ -48,6 +48,15 @@ class RenderLoop(object):
         return self
 
     def _run(self):
+        """
+        Based on:
+          - https://gist.github.com/mariobadr/673bbd5545242fcf9482
+          - http://gameprogrammingpatterns.com/game-loop.html
+          - https://dewitters.com/dewitters-gameloop/
+        TODO: http://bitsquid.blogspot.com/2010/10/time-step-smoothing.html
+        TODO: http://gamasutra.com/view/feature/130247/multithreaded_game_engine_.php
+        """
+
         assert not self._running
         self._on_loop_start()
 

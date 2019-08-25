@@ -68,16 +68,16 @@ class TerminalController(RenderLoop):
         # Raw Input
         self._term_interface.init_term()
         # CSI Params
-        # stdout.write(ec.csi.CH)   # Cursor        : Hide
-        # stdout.write(ec.csi.BPE)  # Bracket Paste : Enable
-        # stdout.write(ec.csi.SBE)  # Screen Buffer : Enable
+        stdout.write(ec.csi.CH)   # Cursor        : Hide
+        stdout.write(ec.csi.BPE)  # Bracket Paste : Enable
+        stdout.write(ec.csi.SBE)  # Screen Buffer : Enable
         # stdout.flush()
 
     def _finalise(self):
         # CSI Params
-        # stdout.write(ec.csi.SBD)  # Screen Buffer : Disable
-        # stdout.write(ec.csi.BPD)  # Bracket Paste : Disable
-        # stdout.write(ec.csi.CS)   # Cursor        : Show
+        stdout.write(ec.csi.SBD)  # Screen Buffer : Disable
+        stdout.write(ec.csi.BPD)  # Bracket Paste : Disable
+        stdout.write(ec.csi.CS)   # Cursor        : Show
         # stdout.flush()
         # Raw Input
         self._term_interface.reset_term()
