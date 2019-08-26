@@ -18,18 +18,80 @@
 # Definitions
 # ========================================================================= #
 
+class _Def(object):
+    def __init__(self, base=None):
+        assert base is None or self._valid_type(base)
+        self._items = [] if base is None else [base]
+
+    def __call__(self, *args):
+        i, buf = 0, []
+        for item in self._items:
+            if callable(item):
+                item = item(args[i])
+                i += 1
+            assert type(item) == str
+            buf.append(item)
+        assert i == len(args)
+        return ''.join(buf)
+
+    def _valid_type(self, other):
+        return type(other) == str or callable(other)
+
+    def _add(self, other, right):
+        assert self._valid_type(other) or isinstance(other, _Def)
+        others = other._items[:] if isinstance(other, _Def) else [other]
+        new = _Def()
+        new._items = (self._items + others) if right else (others + self._items)
+        return new
+
+    def __add__(self, other): return self._add(other, right=True) # self + other
+    def __radd__(self, other): return self._add(other, right=False) # other + self
+
+    def __str__(self): return str(self._items)
+    def __repr__(self): return str(self)
+
 # c    The literal character c.
-#
+
+def _c(value):
+    assert value == 'c'
+    return value
+
+c = _Def(_c)
+
 # C    A single (required) character.
-#
+
+def _C(value):
+    assert type(value) == str and len(value) == 1
+    return value
+
+C = _Def(_C)
+
 # Ps   A single (usually optional) numeric parameter, composed of one or
 #      more digits.
-#
+
+def _Ps(value):
+    i = int(value)
+    assert value >= 0
+    return str(i)
+
+Ps = _Def(_Ps)
+
 # Pm   A multiple numeric parameter composed of any number of single
 #      numeric parameters, separated by ;  character(s).  Individual val-
 #      ues for the parameters are listed with Ps .
-#
+
+def _Pm(value):
+    return ';'.join([_Ps(value) for val in value])
+
+Pm = _Def(_Pm)
+
 # Pt   A text parameter composed of printable characters.
+
+def _Pt(value):
+    assert type(value) == str and all(ord(c) < 128 for c in value)
+    return value
+
+Pt = _Def(_Pt)
 
 # ========================================================================= #
 # Control Bytes, Characters, and Sequences
@@ -104,6 +166,8 @@
 #         xterm to exit string mode if it decodes a common control charac-
 #         ter such as carriage return before the string terminator.
 
+ESC = '\033'
+
 # ========================================================================= #
 # C1 (8-Bit) Control Characters
 # ========================================================================= #
@@ -112,57 +176,89 @@
 # It generates 7-bit controls (by default) or 8-bit if S8C1T is enabled.
 # The following pairs of 7-bit and 8-bit control characters are equiva-
 # lent:
-#
+
 # ESC D
 #      Index (IND  is 0x84).
-#
+
+IND = ESC + 'D'
+
 # ESC E
 #      Next Line (NEL  is 0x85).
-#
+
+NEL = ESC + 'E'
+
 # ESC H
 #      Tab Set (HTS  is 0x88).
-#
+
+HTS = ESC + 'H'
+
 # ESC M
 #      Reverse Index (RI  is 0x8d).
-#
+
+RI = ESC + 'M'
+
 # ESC N
 #      Single Shift Select of G2 Character Set (SS2  is 0x8e), VT220.
 #      This affects next character only.
-#
+
+SS2 = ESC + 'N'
+
 # ESC O
 #      Single Shift Select of G3 Character Set (SS3  is 0x8f), VT220.
 #      This affects next character only.
-#
+
+SS3 = ESC + 'O'
+
 # ESC P
 #      Device Control String (DCS  is 0x90).
-#
+
+DCS = ESC + 'P'
+
 # ESC V
 #      Start of Guarded Area (SPA  is 0x96).
-#
+
+SPA = ESC + 'V'
+
 # ESC W
 #      End of Guarded Area (EPA  is 0x97).
-#
+
+EPA = ESC + 'W'
+
 # ESC X
 #      Start of String (SOS  is 0x98).
-#
+
+SOS = ESC + 'X'
+
 # ESC Z
 #      Return Terminal ID (DECID is 0x9a).  Obsolete form of CSI c  (DA).
-#
+
+DECID = ESC + 'Z'
+
 # ESC [
 #      Control Sequence Introducer (CSI  is 0x9b).
-#
+
+CSI = ESC + '['
+
 # ESC \
 #      String Terminator (ST  is 0x9c).
-#
+
+ST = ESC + '\\'
+
 # ESC ]
 #      Operating System Command (OSC  is 0x9d).
-#
+
+OSC = ESC + ']'
+
 # ESC ^
 #      Privacy Message (PM  is 0x9e).
-#
+
+PM = ESC + '^'
+
 # ESC _
 #      Application Program Command (APC  is 0x9f).
-#
+
+APC = ESC + '_'
+
 # These control characters are used in the vtXXX emulation.
 
 # ========================================================================= #
@@ -200,32 +296,54 @@
 # ========================================================================= #
 
 # BEL       Bell (Ctrl-G).
-#
+
+BEL = 'Ctrl-G'
+
 # BS        Backspace (Ctrl-H).
-#
+
+BS = 'Ctrl-H'
+
 # CR        Carriage Return (Ctrl-M).
-#
+
+CR = 'Ctrl-M'
+
 # ENQ       Return Terminal Status (Ctrl-E).  Default response is an empty
 #           string, but may be overridden by a resource answerbackString.
-#
+
+ENQ = 'Ctrl-E'
+
 # FF        Form Feed or New Page (NP).  (FF  is Ctrl-L).  FF  is treated
 #           the same as LF .
-#
+
+FF = 'Ctrl-L'
+
 # LF        Line Feed or New Line (NL).  (LF  is Ctrl-J).
-#
+
+LF = 'Ctrl-J'
+
 # SI        Switch to Standard Character Set (Ctrl-O is Shift In or LS0).
 #           This invokes the G0 character set (the default) as GL.
 #           VT200 and up implement LS0.
-#
+
+SI = 'Ctrl-O'
+
 # SO        Switch to Alternate Character Set (Ctrl-N is Shift Out or
 #           LS1).  This invokes the G1 character set as GL.
 #           VT200 and up implement LS1.
-#
+
+SO = 'Ctrl-N'
+
 # SP        Space.
-#
+
+SP = 'Space'
+
 # TAB       Horizontal Tab (HT) (Ctrl-I).
-#
+
+TAB = 'Ctrl-I'
+
 # VT        Vertical Tab (Ctrl-K).  This is treated the same as LF.
+
+VT = 'Ctrl-K'
 
 # ========================================================================= #
 # Controls beginning with ESC
@@ -238,32 +356,56 @@
 #           send C1 control characters as 7-bit sequences, e.g., its
 #           responses to queries.  DEC VT200 and up always accept 8-bit
 #           control sequences except when configured for VT100 mode.
-#
+
+S7C1T = ESC + SP + 'F'
+
 # ESC SP G  8-bit controls (S8C1T), VT220.  This tells the terminal to
 #           send C1 control characters as 8-bit sequences, e.g., its
 #           responses to queries.  DEC VT200 and up always accept 8-bit
 #           control sequences except when configured for VT100 mode.
-#
+
+S8C1T = ESC + SP + 'G'
+
 # ESC SP L  Set ANSI conformance level 1 (dpANS X3.134.1).
-#
+
+# TODO: ANSI_CONFORMANCE_LEVEL_1 = ESC + SP + 'L'
+
 # ESC SP M  Set ANSI conformance level 2 (dpANS X3.134.1).
-#
+
+# TODO: ANSI_CONFORMANCE_LEVEL_2 = ESC + SP + 'M'
+
 # ESC SP N  Set ANSI conformance level 3 (dpANS X3.134.1).
-#
+
+# TODO: ANSI_CONFORMANCE_LEVEL_3 = ESC + SP + 'N'
+
 # ESC # 3   DEC double-height line, top half (DECDHL), VT100.
-#
+
+DECDHL = ESC + '#3'
+
 # ESC # 4   DEC double-height line, bottom half (DECDHL), VT100.
-#
+
+DECDHL = ESC + '#4'
+
 # ESC # 5   DEC single-width line (DECSWL), VT100.
-#
+
+DECSWL = ESC + '#5'
+
 # ESC # 6   DEC double-width line (DECDWL), VT100.
-#
+
+DECDWL = ESC + '#6'
+
 # ESC # 8   DEC Screen Alignment Test (DECALN), VT100.
-#
+
+DECALN = ESC + '#8'
+
 # ESC % @   Select default character set.  That is ISO 8859-1 (ISO 2022).
-#
+
+_CHARACTER_SET_DEFAULT = ESC + '%@'
+
 # ESC % G   Select UTF-8 character set, ISO 2022.
-#
+
+_CHARACTER_SET_UTF8 = ESC + '%G'
+
 # ESC ( C   Designate G0 Character Set, VT100, ISO 2022.
 #           Final character C for designating 94-character sets.  In this
 #           list,
@@ -313,16 +455,24 @@
 #           tion has been found for the mappings:
 #             C = & 5  -> DEC Russian, VT500.
 #             C = % 3  -> SCS NRCS, VT500.
-#
+
+_designate_g0_character_set_vt220 = ESC + '(' + C
+
 # ESC ) C   Designate G1 Character Set, ISO 2022, VT100.
 #           The same character sets apply as for ESC ( C.
-#
+
+_designate_g1_character_set_vt220 = ESC + ')' + C
+
 # ESC * C   Designate G2 Character Set, ISO 2022, VT220.
 #           The same character sets apply as for ESC ( C.
-#
+
+_designate_g2_character_set_vt220 = ESC + '*' + C
+
 # ESC + C   Designate G3 Character Set, ISO 2022, VT220.
 #           The same character sets apply as for ESC ( C.
-#
+
+_designate_g3_character_set_vt220 = ESC + '+' + C
+
 # ESC - C   Designate G1 Character Set, VT300.
 #           These controls apply only to 96-character sets.  Unlike the
 #           94-character sets, these can have different values than ASCII
@@ -333,44 +483,80 @@
 #             C = H  -> ISO Hebrew Supplemental (VT500).
 #             C = L  -> ISO Latin-Cyrillic (VT500).
 #             C = M  -> ISO Latin-5 Supplemental (VT500).
-#
+
+_designate_g1_character_set_vt300 = ESC + '-' + C
+
 # ESC . C   Designate G2 Character Set, VT300.
 #           The same character sets apply as for ESC - C.
-#
+
+_designate_g2_character_set_vt300 = ESC + '.' + C
+
 # ESC / C   Designate G3 Character Set, VT300.
 #           The same character sets apply as for ESC - C.
-#
+
+_designate_g3_character_set_vt300 = ESC + '/' + C
+
 # ESC 6     Back Index (DECBI), VT420 and up.
-#
+
+DECBI = ESC + '6'
+
 # ESC 7     Save Cursor (DECSC), VT100.
-#
+
+DECSC = ESC + '7'
+
 # ESC 8     Restore Cursor (DECRC), VT100.
-#
+
+DECRC = ESC + '8'
+
 # ESC 9     Forward Index (DECFI), VT420 and up.
-#
+
+DECFI = ESC + '9'
+
 # ESC =     Application Keypad (DECKPAM).
-#
+
+DECKPAM = ESC + '='
+
 # ESC >     Normal Keypad (DECKPNM), VT100.
-#
+
+DECKPNM = ESC + '>'
+
 # ESC F     Cursor to lower left corner of screen.  This is enabled by the
 #           hpLowerleftBugCompat resource.
-#
+
+_CURSOR_TO_LOWER_LEFT = ESC + 'F'
+
 # ESC c     Full Reset (RIS), VT100.
-#
+
+RIS = ESC + 'c'
+
 # ESC l     Memory Lock (per HP terminals).  Locks memory above the cur-
 #           sor.
-#
+
+_MEMORY_LOCK = ESC + 'l'
+
 # ESC m     Memory Unlock (per HP terminals).
-#
+
+_MEMORY_UNLOCK = ESC + 'm'
+
 # ESC n     Invoke the G2 Character Set as GL (LS2) as GL.
-#
+
+LS2 = ESC + 'n'
+
 # ESC o     Invoke the G3 Character Set as GL (LS3) as GL.
-#
+
+LS3 = ESC + 'o'
+
 # ESC |     Invoke the G3 Character Set as GR (LS3R).
-#
+
+LS3R = ESC + '|'
+
 # ESC }     Invoke the G2 Character Set as GR (LS2R).
-#
+
+LS2R = ESC + '}'
+
 # ESC ~     Invoke the G1 Character Set as GR (LS1R), VT100.
+
+LS1R = ESC + '~'
 
 # ========================================================================= #
 # Application Program-Command functions
@@ -399,7 +585,9 @@
 #           ing the key-code separated by a '/' from the hex-encoded key
 #           value.  The key codes correspond to the DEC function-key codes
 #           (e.g., F6=17).
-#
+
+DECUDK = DCS + Ps + ';' + Ps + '|' + 'Pt' + ST
+
 # DCS $ q Pt ST
 #           Request Status String (DECRQSS), VT420 and up.
 #           The string following the "q" is one of the following:
@@ -415,21 +603,27 @@
 #           xterm responds with DCS 1 $ r Pt ST for valid requests,
 #           replacing the Pt with the corresponding CSI string, or DCS 0 $
 #           r Pt ST for invalid requests.
-#
+
+DECRQSS = DCS + '$q' + Pt + ST
+
 # DCS Ps $ t Pt ST
 #           Restore presentation status (DECRSPS), VT320 and up.  The con-
 #           trol can be converted from a response from DECCIR or DECTABSR
 #           by changing the first "u" to a "t"
 #             Ps = 1  -> DECCIR
 #             Ps = 2  -> DECTABSR
-#
+
+DECRSPS = DCS + Ps + '$t' + Pt + ST
+
 # DCS + p Pt ST
 #           Set Termcap/Terminfo Data (xterm).  The string following the
 #           "p" is a name to use for retrieving data from the terminal
 #           database.  The data will be used for the "tcap" keyboard con-
 #           figuration's function- and special-keys, as well as by the
 #           Request Termcap/Terminfo String control.
-#
+
+_set_terminfo_data = DCS + '+p' + Pt + ST
+
 # DCS + q Pt ST
 #           Request Termcap/Terminfo String (xterm).  The string following
 #           the "q" is a list of names encoded in hexadecimal (2 digits
@@ -449,6 +643,8 @@
 #           DCS 0 + r Pt ST for invalid requests.
 #           The strings are encoded in hexadecimal (2 digits per charac-
 #           ter).
+
+_request_terminfo_string = DCS + '+q' + Pt + ST
 
 # ========================================================================= #
 # Functions using CSI , ordered by the final character(s)

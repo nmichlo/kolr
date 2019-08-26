@@ -21,16 +21,17 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+
 import atexit
 import datetime
 import sys
 from cachier import cachier
+from kolr.util.events import Observable
 
 
 # ========================================================================= #
 # File Util                                                                 #
 # ========================================================================= #
-from kolr.util.events import Observable
 
 
 def overwrite_file(file, string):
