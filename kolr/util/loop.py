@@ -24,16 +24,36 @@
 
 
 import time
+from abc import ABCMeta, abstractmethod
+from typing import Callable, Optional
 
 
 class RenderLoop(object):
 
-    def __init__(self, frame_rate=10, tick_rate=5, max_frame_skip=0):
+    def __init__(
+            self,
+            frame_rate: float = 10,
+            tick_rate: float = 5,
+            max_frame_skip: int = 0,
+            # Callbacks
+            on_loop_start: Optional[Callable[[], None]] = None,
+            on_loop_event: Optional[Callable[[], None]] = None,
+            on_loop_update: Optional[Callable[[], None]] = None,
+            on_loop_render: Optional[Callable[[float], None]] = None,
+            on_loop_end: Optional[Callable[[None], None]] = None,
+    ):
+        # params
         max_frame_skip = float('inf') if max_frame_skip < 0 else max_frame_skip
         self._frame_time = 1 / frame_rate if frame_rate > 0 else float('inf')
         self._tick_time = 1 / tick_rate if tick_rate > 0 else float('inf')
         self._max_frame_skip = max_frame_skip
         self._running = False
+        # callbacks
+        self._on_loop_start = on_loop_start
+        self._on_loop_event = on_loop_event
+        self._on_loop_update = on_loop_update
+        self._on_loop_render = on_loop_render
+        self._on_loop_end = on_loop_end
 
     def start(self):
         if self._running:
@@ -58,7 +78,9 @@ class RenderLoop(object):
         """
 
         assert not self._running
-        self._on_loop_start()
+
+        if self._on_loop_start:
+            self._on_loop_start()
 
         self._running = True
         ave_time, sleep, lag, last_time = 0, 0, 0, time.time()
@@ -67,16 +89,19 @@ class RenderLoop(object):
             t = time.time()
             diff, last_time = t - last_time, t
             # EVENTS
-            self._running = self._on_loop_event()
+            if self._on_loop_event:
+                self._on_loop_event()
             # UPDATE
-            lag += diff
-            skipped_frames = 0
-            while lag >= self._tick_time and skipped_frames <= self._max_frame_skip:
-                skipped_frames += 1
-                lag -= self._tick_time
-                self._on_loop_update()
+            if self._on_loop_update:
+                lag += diff
+                skipped_frames = 0
+                while lag >= self._tick_time and skipped_frames <= self._max_frame_skip:
+                    skipped_frames += 1
+                    lag -= self._tick_time
+                    self._on_loop_update()
             # RENDER
-            self._on_loop_render(lag / self._tick_time)   # interpolate between updates
+            if self._on_loop_render:
+                self._on_loop_render(lag / self._tick_time)
             # RENDER SLEEP
             ave_time = (ave_time + diff) / 2
             sleep_error, last_proc_time = ave_time - self._frame_time, diff - sleep
@@ -84,19 +109,45 @@ class RenderLoop(object):
             if sleep > 0:
                 time.sleep(sleep)
 
-        self._on_loop_end()
+        if self._on_loop_end:
+            self._on_loop_end()
 
+
+class RenderLoopABC(RenderLoop, metaclass=ABCMeta):
+
+    def __init__(
+            self,
+            frame_rate: float = 10,
+            tick_rate: float = 5,
+            max_frame_skip: int = 0,
+    ):
+        super().__init__(
+            frame_rate=frame_rate,
+            tick_rate=tick_rate,
+            max_frame_skip=max_frame_skip,
+            on_loop_start=self._on_loop_start,
+            on_loop_event=self._on_loop_event,
+            on_loop_update=self._on_loop_update,
+            on_loop_render=self._on_loop_render,
+            on_loop_end=self._on_loop_end,
+        )
+
+    @abstractmethod
     def _on_loop_start(self):
         raise NotImplementedError()
 
-    def _on_loop_event(self) -> bool:
+    @abstractmethod
+    def _on_loop_event(self):
         raise NotImplementedError()
 
+    @abstractmethod
     def _on_loop_update(self):
         raise NotImplementedError()
 
-    def _on_loop_render(self, delta):
+    @abstractmethod
+    def _on_loop_render(self, delta: float):
         raise NotImplementedError()
 
+    @abstractmethod
     def _on_loop_end(self):
         raise NotImplementedError()
