@@ -28,7 +28,7 @@ from kolr.term.controller import TerminalController, EVENT_RESIZE, EVENT_KEY, EV
 
 if __name__ == '__main__':
 
-    k, (w, h), (x, y) = None, (None, None), (None, None)
+    p, k, (w, h), (x, y) = None, None, (None, None), (None, None)
 
     screen = TerminalController(frame_rate=10)
 
@@ -57,6 +57,17 @@ if __name__ == '__main__':
         screen.write_str(f'x: {x} y: {y}', y=1)
         screen.write_str(f'w: {w} h: {h}', y=2)
         screen.write_str(f'delta: {delta}', y=3)
+        if p:
+            screen.write_str(f'pressed: {p}', y=5)
         screen.flush()
+
+    @screen.kb('<any>')
+    def _(event):
+        global p
+        p = event
+
+    @screen.kb('c-c')
+    def _(event):
+        screen.stop()
 
     screen.start()

@@ -25,13 +25,14 @@
 
 import time
 import matplotlib.pyplot as plt
-from kolr.util.loop import RenderLoop
+from kolr.util.loop import RenderLoopABC
 
 
-class Loop(RenderLoop):
+class Loop(RenderLoopABC):
     def __init__(self, runtime_ms=5000, *args, **kwargs):
-        from collections import defaultdict
         super().__init__(*args, **kwargs)
+        from collections import defaultdict
+
         self._runtime_ms = runtime_ms
         self.update_count = 0
         self.render_count = 0
