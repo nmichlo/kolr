@@ -1,3 +1,75 @@
+
+# ========================================================================= #
+# BEGIN - HELPER                                                            #
+# ========================================================================= #
+
+
+from typing import Union
+
+
+class _Param(object):
+    def __init__(self, validator=None, formatter=None):
+        assert validator is None or callable(validator)
+        assert formatter is None or callable(formatter)
+        self._validator = validator
+        self._formatter = formatter
+    def __call__(self, value):
+        if self._validator:
+            assert self._validator(value)
+        if self._formatter:
+            value = self._formatter(value)
+        return str(value)
+    @staticmethod
+    def _allow_wrap(allowed=None, validator=None):
+        if not allowed:
+            return None if not validator else validator
+        else:
+            allowed = set(allowed)
+            return (lambda x: x in allowed) if not validator else (lambda x: validator(x) or x in allowed)
+    def __getitem__(self, item):
+        assert isinstance(item, (tuple, list, set))
+        return _Param(self._allow_wrap(item, self._validator), self._formatter)
+    def __add__(self, other: Union[str, '_Param', '_Builder']): return _Builder(self).__add__(other)
+    def __radd__(self, other: Union[str, '_Param', '_Builder']): return _Builder(self).__radd__(other)
+
+class _Builder(object):
+    def __init__(self, *items):
+        assert all(isinstance(item, (str, _Param)) for item in items)
+        self._items = list(items)
+
+    def __call__(self, *args):
+        i, buf = 0, []
+        for item in self._items:
+            if isinstance(item, _Param):
+                item, i = item(args[i]), i + 1
+            buf.append(str(item))
+        assert i <= len(args), "Too many args"
+        assert i >= len(args), "Too few args"
+        return ''.join(buf)
+
+    def _add(self, item, is_right=True):
+        assert isinstance(item, (str, _Param, _Builder))
+        if isinstance(item, _Builder):
+            items = item._items[:]
+        else:
+            items = [item]
+        new = _Builder()
+        new._items = (self._items + items) if is_right else (items + self._items)
+        return new
+
+    def __add__(self, other): return self._add(other, is_right=True)  # self + other
+    def __radd__(self, other): return self._add(other, is_right=False)  # other + self
+
+    def __str__(self): return str(self._items)
+    def __repr__(self): return str(self)
+
+
+# ========================================================================= #
+# END - HELPER                                                              #
+# ========================================================================= #
+
+
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 #
 #                         XTerm Control Sequences
 #
@@ -13,89 +85,45 @@
 #                       XFree86 Project (1996-2006)
 #                     invisible-island.net (2006-2019)
 #                updated for XTerm Patch #348 (2019/07/11)
+#
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
-# ========================================================================= #
+
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Definitions
-# ========================================================================= #
-
-class _Def(object):
-    def __init__(self, base=None):
-        assert base is None or self._valid_type(base)
-        self._items = [] if base is None else [base]
-
-    def __call__(self, *args):
-        i, buf = 0, []
-        for item in self._items:
-            if callable(item):
-                item = item(args[i])
-                i += 1
-            assert type(item) == str
-            buf.append(item)
-        assert i == len(args)
-        return ''.join(buf)
-
-    def _valid_type(self, other):
-        return type(other) == str or callable(other)
-
-    def _add(self, other, right):
-        assert self._valid_type(other) or isinstance(other, _Def)
-        others = other._items[:] if isinstance(other, _Def) else [other]
-        new = _Def()
-        new._items = (self._items + others) if right else (others + self._items)
-        return new
-
-    def __add__(self, other): return self._add(other, right=True) # self + other
-    def __radd__(self, other): return self._add(other, right=False) # other + self
-
-    def __str__(self): return str(self._items)
-    def __repr__(self): return str(self)
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # c    The literal character c.
 
-def _c(value):
-    assert value == 'c'
-    return value
-
-c = _Def(_c)
+c = 'c'
 
 # C    A single (required) character.
 
-def _C(value):
-    assert type(value) == str and len(value) == 1
-    return value
-
-C = _Def(_C)
+__C_vldt = lambda x: type(x) == str and len(x) == 1
+C = _Param(validator=__C_vldt, formatter=None)
 
 # Ps   A single (usually optional) numeric parameter, composed of one or
 #      more digits.
 
-def _Ps(value):
-    i = int(value)
-    assert value >= 0
-    return str(i)
-
-Ps = _Def(_Ps)
+__Ps_vldt = lambda x: int(x) >= 0
+Ps = _Param(validator=__Ps_vldt, formatter=None)
 
 # Pm   A multiple numeric parameter composed of any number of single
 #      numeric parameters, separated by ;  character(s).  Individual val-
 #      ues for the parameters are listed with Ps .
 
-def _Pm(value):
-    return ';'.join([_Ps(value) for val in value])
-
-Pm = _Def(_Pm)
+__Pm_vldt = lambda x: all(__Ps_vldt(a) for a in x)
+__Pm_frmt = lambda x: ';'.join(str(a) for a in x)
+Pm = _Param(validator=__Pm_vldt, formatter=__Pm_frmt)
 
 # Pt   A text parameter composed of printable characters.
 
-def _Pt(value):
-    assert type(value) == str and all(ord(c) < 128 for c in value)
-    return value
+__Pt_vldt = lambda x: type(x) == str and all(ord(a) < 128 for a in x)
+Pt = _Param(validator=__Pt_vldt, formatter=None)
 
-Pt = _Def(_Pt)
-
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Control Bytes, Characters, and Sequences
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # ECMA-48 (aka "ISO 6429") documents C1 (8-bit) and C0 (7-bit) codes.
 # Those are respectively codes 128 to 159 and 0 to 31.  ECMA-48 avoids
@@ -168,9 +196,9 @@ Pt = _Def(_Pt)
 
 ESC = '\033'
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # C1 (8-Bit) Control Characters
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # The xterm program recognizes both 8-bit and 7-bit control characters.
 # It generates 7-bit controls (by default) or 8-bit if S8C1T is enabled.
@@ -261,9 +289,9 @@ APC = ESC + '_'
 
 # These control characters are used in the vtXXX emulation.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # VT100 Mode
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # In this document, "VT100" refers not only to VT100/VT102, but also to
 # the succession of upward-compatible terminals produced by DEC (Digital
@@ -291,63 +319,63 @@ APC = ESC + '_'
 # Many of the features are optional; xterm can be configured and built
 # without support for them.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Single-character functions
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # BEL       Bell (Ctrl-G).
 
-BEL = 'Ctrl-G'
+BEL = 'ctrl-g'
 
 # BS        Backspace (Ctrl-H).
 
-BS = 'Ctrl-H'
+BS = 'ctrl-h'
 
 # CR        Carriage Return (Ctrl-M).
 
-CR = 'Ctrl-M'
+CR = 'ctrl-m'
 
 # ENQ       Return Terminal Status (Ctrl-E).  Default response is an empty
 #           string, but may be overridden by a resource answerbackString.
 
-ENQ = 'Ctrl-E'
+ENQ = 'ctrl-e'
 
 # FF        Form Feed or New Page (NP).  (FF  is Ctrl-L).  FF  is treated
 #           the same as LF .
 
-FF = 'Ctrl-L'
+FF = 'ctrl-l'
 
 # LF        Line Feed or New Line (NL).  (LF  is Ctrl-J).
 
-LF = 'Ctrl-J'
+LF = 'ctrl-j'
 
 # SI        Switch to Standard Character Set (Ctrl-O is Shift In or LS0).
 #           This invokes the G0 character set (the default) as GL.
 #           VT200 and up implement LS0.
 
-SI = 'Ctrl-O'
+SI = 'ctrl-o'
 
 # SO        Switch to Alternate Character Set (Ctrl-N is Shift Out or
 #           LS1).  This invokes the G1 character set as GL.
 #           VT200 and up implement LS1.
 
-SO = 'Ctrl-N'
+SO = 'ctrl-n'
 
 # SP        Space.
 
-SP = 'Space'
+SP = ' '
 
 # TAB       Horizontal Tab (HT) (Ctrl-I).
 
-TAB = 'Ctrl-I'
+TAB = 'ctrl-i'
 
 # VT        Vertical Tab (Ctrl-K).  This is treated the same as LF.
 
-VT = 'Ctrl-K'
+VT = 'ctrl-k'
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Controls beginning with ESC
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # This excludes controls where ESC  is part of a 7-bit equivalent to 8-bit
 # C1 controls, ordered by the final character(s).
@@ -368,15 +396,15 @@ S8C1T = ESC + SP + 'G'
 
 # ESC SP L  Set ANSI conformance level 1 (dpANS X3.134.1).
 
-# TODO: ANSI_CONFORMANCE_LEVEL_1 = ESC + SP + 'L'
+_ansi_conformance_level_1 = ESC + SP + 'L'
 
 # ESC SP M  Set ANSI conformance level 2 (dpANS X3.134.1).
 
-# TODO: ANSI_CONFORMANCE_LEVEL_2 = ESC + SP + 'M'
+_ansi_conformance_level_2 = ESC + SP + 'M'
 
 # ESC SP N  Set ANSI conformance level 3 (dpANS X3.134.1).
 
-# TODO: ANSI_CONFORMANCE_LEVEL_3 = ESC + SP + 'N'
+_ansi_conformance_level_3 = ESC + SP + 'N'
 
 # ESC # 3   DEC double-height line, top half (DECDHL), VT100.
 
@@ -400,11 +428,11 @@ DECALN = ESC + '#8'
 
 # ESC % @   Select default character set.  That is ISO 8859-1 (ISO 2022).
 
-_CHARACTER_SET_DEFAULT = ESC + '%@'
+_character_set_default = ESC + '%@'
 
 # ESC % G   Select UTF-8 character set, ISO 2022.
 
-_CHARACTER_SET_UTF8 = ESC + '%G'
+_character_set_utf8 = ESC + '%G'
 
 # ESC ( C   Designate G0 Character Set, VT100, ISO 2022.
 #           Final character C for designating 94-character sets.  In this
@@ -456,22 +484,22 @@ _CHARACTER_SET_UTF8 = ESC + '%G'
 #             C = & 5  -> DEC Russian, VT500.
 #             C = % 3  -> SCS NRCS, VT500.
 
-_designate_g0_character_set_vt220 = ESC + '(' + C
+_designate_g0_character_set_vt220 = ESC + '(' + C['A','B','4','C','5','R','f','Q','9','K','"','%=','Y','`','E','6','%6','Z','H','7','=','%2','0','<','>','%5','&4','"?','"4','%0','&5','%3']
 
 # ESC ) C   Designate G1 Character Set, ISO 2022, VT100.
 #           The same character sets apply as for ESC ( C.
 
-_designate_g1_character_set_vt220 = ESC + ')' + C
+_designate_g1_character_set_vt220 = ESC + ')' + C['A','B','4','C','5','R','f','Q','9','K','"','%=','Y','`','E','6','%6','Z','H','7','=','%2','0','<','>','%5','&4','"?','"4','%0','&5','%3']
 
 # ESC * C   Designate G2 Character Set, ISO 2022, VT220.
 #           The same character sets apply as for ESC ( C.
 
-_designate_g2_character_set_vt220 = ESC + '*' + C
+_designate_g2_character_set_vt220 = ESC + '*' + C['A','B','4','C','5','R','f','Q','9','K','"','%=','Y','`','E','6','%6','Z','H','7','=','%2','0','<','>','%5','&4','"?','"4','%0','&5','%3']
 
 # ESC + C   Designate G3 Character Set, ISO 2022, VT220.
 #           The same character sets apply as for ESC ( C.
 
-_designate_g3_character_set_vt220 = ESC + '+' + C
+_designate_g3_character_set_vt220 = ESC + '+' + C['A','B','4','C','5','R','f','Q','9','K','"','%=','Y','`','E','6','%6','Z','H','7','=','%2','0','<','>','%5','&4','"?','"4','%0','&5','%3']
 
 # ESC - C   Designate G1 Character Set, VT300.
 #           These controls apply only to 96-character sets.  Unlike the
@@ -484,17 +512,17 @@ _designate_g3_character_set_vt220 = ESC + '+' + C
 #             C = L  -> ISO Latin-Cyrillic (VT500).
 #             C = M  -> ISO Latin-5 Supplemental (VT500).
 
-_designate_g1_character_set_vt300 = ESC + '-' + C
+_designate_g1_character_set_vt300 = ESC + '-' + C['A','F','H','L','M']
 
 # ESC . C   Designate G2 Character Set, VT300.
 #           The same character sets apply as for ESC - C.
 
-_designate_g2_character_set_vt300 = ESC + '.' + C
+_designate_g2_character_set_vt300 = ESC + '.' + C['A','F','H','L','M']
 
 # ESC / C   Designate G3 Character Set, VT300.
 #           The same character sets apply as for ESC - C.
 
-_designate_g3_character_set_vt300 = ESC + '/' + C
+_designate_g3_character_set_vt300 = ESC + '/' + C['A','F','H','L','M']
 
 # ESC 6     Back Index (DECBI), VT420 and up.
 
@@ -523,7 +551,7 @@ DECKPNM = ESC + '>'
 # ESC F     Cursor to lower left corner of screen.  This is enabled by the
 #           hpLowerleftBugCompat resource.
 
-_CURSOR_TO_LOWER_LEFT = ESC + 'F'
+_cursor_to_lower_left = ESC + 'F'
 
 # ESC c     Full Reset (RIS), VT100.
 
@@ -532,11 +560,11 @@ RIS = ESC + 'c'
 # ESC l     Memory Lock (per HP terminals).  Locks memory above the cur-
 #           sor.
 
-_MEMORY_LOCK = ESC + 'l'
+_memory_lock = ESC + 'l'
 
 # ESC m     Memory Unlock (per HP terminals).
 
-_MEMORY_UNLOCK = ESC + 'm'
+_memory_unlock = ESC + 'm'
 
 # ESC n     Invoke the G2 Character Set as GL (LS2) as GL.
 
@@ -558,16 +586,16 @@ LS2R = ESC + '}'
 
 LS1R = ESC + '~'
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Application Program-Command functions
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # APC Pt ST None.  xterm implements no APC  functions; Pt is ignored.  Pt
 #           need not be printable characters.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Device-Control functions
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # DCS Ps ; Ps | Pt ST
 #           User-Defined Keys (DECUDK), VT220 and up.
@@ -586,7 +614,7 @@ LS1R = ESC + '~'
 #           value.  The key codes correspond to the DEC function-key codes
 #           (e.g., F6=17).
 
-DECUDK = DCS + Ps + ';' + Ps + '|' + 'Pt' + ST
+DECUDK = DCS + Ps[0,1] + ';' + Ps[0,1] + '|' + Pt + ST
 
 # DCS $ q Pt ST
 #           Request Status String (DECRQSS), VT420 and up.
@@ -604,7 +632,7 @@ DECUDK = DCS + Ps + ';' + Ps + '|' + 'Pt' + ST
 #           replacing the Pt with the corresponding CSI string, or DCS 0 $
 #           r Pt ST for invalid requests.
 
-DECRQSS = DCS + '$q' + Pt + ST
+DECRQSS = DCS + '$q' + Pt['m','"p',SP+'q','"q','r','s','t','$','*'] + ST
 
 # DCS Ps $ t Pt ST
 #           Restore presentation status (DECRSPS), VT320 and up.  The con-
@@ -613,7 +641,7 @@ DECRQSS = DCS + '$q' + Pt + ST
 #             Ps = 1  -> DECCIR
 #             Ps = 2  -> DECTABSR
 
-DECRSPS = DCS + Ps + '$t' + Pt + ST
+DECRSPS = DCS + Ps[1,2] + '$t' + Pt + ST
 
 # DCS + p Pt ST
 #           Set Termcap/Terminfo Data (xterm).  The string following the
@@ -646,69 +674,109 @@ _set_terminfo_data = DCS + '+p' + Pt + ST
 
 _request_terminfo_string = DCS + '+q' + Pt + ST
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Functions using CSI , ordered by the final character(s)
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # CSI Ps @  Insert Ps (Blank) Character(s) (default = 1) (ICH).
-#
+
+ICH = CSI + Ps + '@'
+
 # CSI Ps SP @
 #           Shift left Ps columns(s) (default = 1) (SL), ECMA-48.
-#
+
+SL = CSI + Ps + SP + '@'
+
 # CSI Ps A  Cursor Up Ps Times (default = 1) (CUU).
-#
+
+CUU = CSI + Ps + 'A'
+
 # CSI Ps SP A
 #           Shift right Ps columns(s) (default = 1) (SR), ECMA-48.
-#
+
+SR = CSI + Ps + SP + 'A'
+
 # CSI Ps B  Cursor Down Ps Times (default = 1) (CUD).
-#
+
+CUD = CSI + Ps + 'B'
+
 # CSI Ps C  Cursor Forward Ps Times (default = 1) (CUF).
-#
+
+CUF = CSI + Ps + 'C'
+
 # CSI Ps D  Cursor Backward Ps Times (default = 1) (CUB).
-#
+
+CUB = CSI + Ps + 'D'
+
 # CSI Ps E  Cursor Next Line Ps Times (default = 1) (CNL).
-#
+
+CNL = CSI + Ps + 'E'
+
 # CSI Ps F  Cursor Preceding Line Ps Times (default = 1) (CPL).
-#
+
+CPL = CSI + Ps + 'F'
+
 # CSI Ps G  Cursor Character Absolute  [column] (default = [row,1]) (CHA).
-#
+
+CHA = CSI + Ps + 'G'
+
 # CSI Ps ; Ps H
 #           Cursor Position [row;column] (default = [1,1]) (CUP).
-#
+
+CUP = CSI + Ps + ';' + Ps + 'H'
+
 # CSI Ps I  Cursor Forward Tabulation Ps tab stops (default = 1) (CHT).
-#
+
+CHT = CSI + Ps + 'I'
+
 # CSI Ps J  Erase in Display (ED), VT100.
 #             Ps = 0  -> Erase Below (default).
 #             Ps = 1  -> Erase Above.
 #             Ps = 2  -> Erase All.
 #             Ps = 3  -> Erase Saved Lines (xterm).
-#
+
+ED = CSI + Ps + 'J'
+
 # CSI ? Ps J
 #           Erase in Display (DECSED), VT220.
 #             Ps = 0  -> Selective Erase Below (default).
 #             Ps = 1  -> Selective Erase Above.
 #             Ps = 2  -> Selective Erase All.
 #             Ps = 3  -> Selective Erase Saved Lines (xterm).
-#
+
+DECSED = CSI + '?' + Ps + 'J'
+
 # CSI Ps K  Erase in Line (EL), VT100.
 #             Ps = 0  -> Erase to Right (default).
 #             Ps = 1  -> Erase to Left.
 #             Ps = 2  -> Erase All.
-#
+
+EL = CSI + Ps + 'K'
+
 # CSI ? Ps K
 #           Erase in Line (DECSEL), VT220.
 #             Ps = 0  -> Selective Erase to Right (default).
 #             Ps = 1  -> Selective Erase to Left.
 #             Ps = 2  -> Selective Erase All.
-#
+
+DECSEL = CSI + '?' + Ps + 'K'
+
 # CSI Ps L  Insert Ps Line(s) (default = 1) (IL).
-#
+
+IL = CSI + Ps + 'L'
+
 # CSI Ps M  Delete Ps Line(s) (default = 1) (DL).
-#
+
+DL = CSI + Ps + 'M'
+
 # CSI Ps P  Delete Ps Character(s) (default = 1) (DCH).
-#
+
+DCH = CSI + Ps + 'P'
+
 # CSI Ps S  Scroll up Ps lines (default = 1) (SU), VT420, ECMA-48.
-#
+
+SU = CSI + Ps + 'S'
+
 # CSI ? Pi ; Pa ; Pv S
 #           If configured to support either Sixel Graphics or ReGIS Graph-
 #           ics, xterm accepts a three-parameter control sequence, where
@@ -752,13 +820,20 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #               graphics geometry, the reverse is not true.  Setting
 #               graphics geometry does not affect the window size.
 #
+
+# TODO: CSI + '?' + Pi + ';' + Pa + ';' + Pv + 'S'
+
 # CSI Ps T  Scroll down Ps lines (default = 1) (SD), VT420.
-#
+
+SD = CSI + Ps + 'T'
+
 # CSI Ps ; Ps ; Ps ; Ps ; Ps T
 #           Initiate highlight mouse tracking.  Parameters are
 #           [func;startx;starty;firstrow;lastrow].  See the section Mouse
 #           Tracking.
-#
+
+_highlight_mouse_tracking = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + 'T'
+
 # CSI > Ps ; Ps T
 #           Reset one or more features of the title modes to the default
 #           value.  Normally, "reset" disables the feature.  It is possi-
@@ -772,23 +847,37 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ps = 3  -> Do not query window/icon labels using UTF-8.
 #
 #           (See discussion of Title Modes).
-#
+
+_reset_title_mode_features = CSI + '>' + Ps + ';' + Ps + 'T'
+
 # CSI Ps X  Erase Ps Character(s) (default = 1) (ECH).
-#
+
+ECH = CSI + Ps + 'X'
+
 # CSI Ps Z  Cursor Backward Tabulation Ps tab stops (default = 1) (CBT).
-#
+
+CBT = CSI + Ps + 'Z'
+
 # CSI Ps ^  Scroll down Ps lines (default = 1) (SD), ECMA-48.
 #           This was a publication error in the original ECMA-48 5th edi-
 #           tion (1991) corrected in 2003.
-#
+
+SD = CSI + Ps + '^'
+
 # CSI Pm `  Character Position Absolute  [column] (default = [row,1])
 #           (HPA).
-#
+
+HPA = CSI + Pm + '`'
+
 # CSI Pm a  Character Position Relative  [columns] (default = [row,col+1])
 #           (HPR).
-#
+
+HPR = CSI + Pm + 'a'
+
 # CSI Ps b  Repeat the preceding graphic character Ps times (REP).
-#
+
+REP = CSI + Ps + 'b'
+
 # CSI Ps c  Send Device Attributes (Primary DA).
 #             Ps = 0  or omitted -> request attributes from terminal.  The
 #           response depends on the decTerminalID resource setting.
@@ -825,13 +914,17 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           trols (DECSNLS, DECSCPP, DECSLPP) to adjust its visible win-
 #           dow's size.  The "cursor coupling" controls (DECHCCM, DECPCCM,
 #           DECVCCM) are ignored.
-#
+
+PDA = CSI + Ps[0,1,2,3,4,6,8,9,15,16,17,18,21,22,28,29] + 'c'
+
 # CSI = Ps c
 #           Send Device Attributes (Tertiary DA).
 #             Ps = 0  -> report Terminal Unit ID (default), VT400.  XTerm
 #           uses zeros for the site code and serial number in its DECRPTUI
 #           response.
-#
+
+TDA = CSI + '=' + Ps[0,] + 'c'
+
 # CSI > Ps c
 #           Send Device Attributes (Secondary DA).
 #             Ps = 0  or omitted -> request the terminal's identification
@@ -855,26 +948,38 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           the XFree86 patch number, starting with 95).  In a DEC termi-
 #           nal, Pc indicates the ROM cartridge registration number and is
 #           always zero.
-#
+
+SDA = CSI + '>' + Ps[0,] + 'c'
+
 # CSI Pm d  Line Position Absolute  [row] (default = [1,column]) (VPA).
-#
+
+VPA = CSI + Pm + 'd'
+
 # CSI Pm e  Line Position Relative  [rows] (default = [row+1,column])
 #           (VPR).
-#
+
+VPR = CSI + Pm + 'e'
+
 # CSI Ps ; Ps f
 #           Horizontal and Vertical Position [row;column] (default =
 #           [1,1]) (HVP).
-#
+
+HVP = CSI + Ps + ';' + Ps + 'f'
+
 # CSI Ps g  Tab Clear (TBC).
 #             Ps = 0  -> Clear Current Column (default).
 #             Ps = 3  -> Clear All.
-#
+
+TBC = CSI + Ps[0,3] + 'g'
+
 # CSI Pm h  Set Mode (SM).
 #             Ps = 2  -> Keyboard Action Mode (AM).
 #             Ps = 4  -> Insert Mode (IRM).
 #             Ps = 1 2  -> Send/receive (SRM).
 #             Ps = 2 0  -> Automatic Newline (LNM).
-#
+
+SM = CSI + Ps[2,4,12,20] + 'h'
+
 # CSI ? Pm h
 #           DEC Private Mode Set (DECSET).
 #             Ps = 1  -> Application Cursor Keys (DECCKM), VT100.
@@ -978,14 +1083,22 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           xterm.
 #             Ps = 1 0 6 1  -> Set VT220 keyboard emulation, xterm.
 #             Ps = 2 0 0 4  -> Set bracketed paste mode, xterm.
-#
+
+DECSET = CSI + '?' + Ps[
+    1,2,3,4,5,6,7,8,9,10,12,13,14,18,19,25,30,35,38,40,41,42,44,45,46,47,66,67,69,95,
+    1000,1001,1002,1003,1004,1005,1006,1007,1010,1011,1015,1034,1035,1036,1037,1039,
+    1040,1041,1042,1043,1044,1046,1047,1048,1049,1050,1051,1052,1053,1060,1061,2004
+] + 'h'
+
 # CSI Pm i  Media Copy (MC).
 #             Ps = 0  -> Print screen (default).
 #             Ps = 4  -> Turn off printer controller mode.
 #             Ps = 5  -> Turn on printer controller mode.
 #             Ps = 1 0  -> HTML screen dump, xterm.
 #             Ps = 1 1  -> SVG screen dump, xterm.
-#
+
+MC = CSI + Ps[0,4,5,10,11] + 'i'
+
 # CSI ? Pm i
 #           Media Copy (MC), DEC-specific.
 #             Ps = 1  -> Print line containing cursor.
@@ -993,13 +1106,17 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ps = 5  -> Turn on autoprint mode.
 #             Ps = 1 0  -> Print composed display, ignores DECPEX.
 #             Ps = 1 1  -> Print all pages.
-#
+
+MC_specific = CSI + '?' + Ps[1,4,5,10,11] + 'i'
+
 # CSI Pm l  Reset Mode (RM).
 #             Ps = 2  -> Keyboard Action Mode (AM).
 #             Ps = 4  -> Replace Mode (IRM).
 #             Ps = 1 2  -> Send/receive (SRM).
 #             Ps = 2 0  -> Normal Linefeed (LNM).
-#
+
+RM = CSI + Ps[2,4,12,20] + 'l'
+
 # CSI ? Pm l
 #           DEC Private Mode Reset (DECRST).
 #             Ps = 1  -> Normal Cursor Keys (DECCKM), VT100.
@@ -1098,7 +1215,13 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ps = 1 0 6 1  -> Reset keyboard emulation to Sun/PC style,
 #           xterm.
 #             Ps = 2 0 0 4  -> Reset bracketed paste mode, xterm.
-#
+
+DECRST = CSI + '?' + Ps[
+    1,2,3,4,5,6,7,8,9,10,12,13,14,18,19,25,30,35,40,41,42,44,45,46,47,66,67,69,95,
+    1000,1001,1002,1003,1004,1005,1006,1007,1010,1011,1015,1034,1035,1036,1037,1039,
+    1040,1041,1042,1043,1046,1047,1048,1049,1050,1051,1052,1053,1060,1061,2004,
+] +  'l'
+
 # CSI Pm m  Character Attributes (SGR).
 #             Ps = 0  -> Normal (default), VT100.
 #             Ps = 1  -> Bold, VT100.
@@ -1220,7 +1343,13 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           resource directColor is true, then rather than choosing the
 #           closest match, xterm asks the X server to directly render a
 #           given color.
-#
+
+# TODO: 38, 48
+SGR = CSI + Ps[
+    0,1,2,3,4,5,7,8,9,21,22,23,24,25,27,28,29,30,31,32,33,34,35,36,37,39,40,41,
+    42,43,44,45,46,47,49,90,91,92,93,94,95,96,97,100,101,102,103,104,105,106,107,
+] + 'm'
+
 # CSI > Ps ; Ps m
 #           Set or reset resource-values used by xterm to decide whether
 #           to construct escape sequences holding information about the
@@ -1239,7 +1368,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #
 #           If no parameters are given, all resources are reset to their
 #           initial values.
-#
+
+_set_resource = CSI + '>' + Ps[0,1,2,4] + ';' + Ps + 'm'
+
 # CSI Ps n  Device Status Report (DSR).
 #             Ps = 5  -> Status Report.
 #           Result ("OK") is CSI 0 n
@@ -1260,7 +1391,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           codes.  The modifyFunctionKeys and modifyKeyboard resources
 #           can change the form of the string sent from the modified F1
 #           key.
-#
+
+DSR = CSI + Ps[5,6] + 'n'
+
 # CSI > Ps n
 #           Disable modifiers which may be enabled via the CSI > Ps; Ps m
 #           sequence.  This corresponds to a resource value of "-1", which
@@ -1278,7 +1411,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           keys to make an extended sequence of functions rather than
 #           adding a parameter to each function key to denote the modi-
 #           fiers.
-#
+
+_disable_resource = CSI + '>' + Ps[0,1,2,4] + 'n'
+
 # CSI ? Ps n
 #           Device Status Report (DSR, DEC-specific).
 #             Ps = 6  -> Report Cursor Position (DECXCPR) [row;column] as
@@ -1309,7 +1444,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           no errors).
 #             Ps = 8 5  -> Report multi-session configuration as CSI ? 8 3
 #           n  (not configured for multiple-session operation).
-#
+
+DSR_specific = CSI + '?' + Ps[6,15,25,26,53,55,56,62,63,75,85] + 'n'
+
 # CSI > Ps p
 #           Set resource value pointerMode.  This is used by xterm to
 #           decide whether to hide the pointer cursor as the user types.
@@ -1323,9 +1460,13 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           the window.
 #
 #           If no parameter is given, xterm uses the default, which is 1 .
-#
+
+_set_pointer_mode = CSI + '>' + Ps[0,1,2,3] + 'p'
+
 # CSI ! p   Soft terminal reset (DECSTR), VT220 and up.
-#
+
+DECSTR = CSI + '!p'
+
 # CSI Ps ; Ps " p
 #           Set conformance level (DECSCL), VT220 and up.
 #
@@ -1346,7 +1487,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #
 #           The 7-bit and 8-bit control modes can also be set by S7C1T and
 #           S8C1T, but DECSCL is preferred.
-#
+
+DECSCL = CSI + Ps[61,62,63,64,65] + ';' + Ps[0,1,2] + '"p'
+
 # CSI Ps $ p
 #           Request ANSI mode (DECRQM).  For VT300 and up, reply DECRPM is
 #             CSI Ps; Pm$ y
@@ -1357,7 +1500,10 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             2 - reset
 #             3 - permanently set
 #             4 - permanently reset
-#
+
+# TODO
+DECRQM = CSI + Ps + '$p'
+
 # CSI ? Ps $ p
 #           Request DEC private mode (DECRQM).  For VT300 and up, reply
 #           DECRPM is
@@ -1368,12 +1514,20 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           vided only for reporting their values using this control
 #           sequence.  They correspond to the resources cursorBlink and
 #           cursorBlinkXOR.
+
+# TODO
+DECRQM_private = CSI + '?' + Ps + '$p'
+
+
 # CSI # p
 # CSI Ps ; Ps # p
 #           Push video attributes onto stack (XTPUSHSGR), xterm.  This is
 #           an alias for CSI # { , used to work around language limita-
 #           tions of C#.
-#
+
+XTPUSHSGR_all_alias = CSI + '#p'
+XTPUSHSGR_alias = CSI + Ps + ';' + Ps + '#p'
+
 # CSI Ps q  Load LEDs (DECLL), VT100.
 #             Ps = 0  -> Clear all LEDS (default).
 #             Ps = 1  -> Light Num Lock.
@@ -1382,7 +1536,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ps = 2 1  -> Extinguish Num Lock.
 #             Ps = 2 2  -> Extinguish Caps Lock.
 #             Ps = 2 3  -> Extinguish Scroll Lock.
-#
+
+DECLL = CSI + Ps[0,1,2,3,21,22,23] + 'q'
+
 # CSI Ps SP q
 #           Set cursor style (DECSCUSR), VT520.
 #             Ps = 0  -> blinking block.
@@ -1392,42 +1548,62 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ps = 4  -> steady underline.
 #             Ps = 5  -> blinking bar (xterm).
 #             Ps = 6  -> steady bar (xterm).
-#
+
+DECSCUSR = CSI + Ps + SP + 'q'
+
 # CSI Ps " q
 #           Select character protection attribute (DECSCA).  Valid values
 #           for the parameter:
 #             Ps = 0  -> DECSED and DECSEL can erase (default).
 #             Ps = 1  -> DECSED and DECSEL cannot erase.
 #             Ps = 2  -> DECSED and DECSEL can erase.
-#
+
+DECSCA = CSI + Ps + '"q'
+
 # CSI # q   Pop video attributes from stack (XTPOPSGR), xterm.  This is an
 #           alias for CSI # } , used to work around language limitations
 #           of C#.
-#
+
+XTPOPSGR_alias = CSI + '#q'
+
 # CSI Ps ; Ps r
 #           Set Scrolling Region [top;bottom] (default = full size of win-
 #           dow) (DECSTBM), VT100.
-#
+
+DECSTBM = CSI + Ps + ';' + Ps + 'r'
+
 # CSI ? Pm r
 #           Restore DEC Private Mode Values.  The value of Ps previously
 #           saved is restored.  Ps values are the same as for DECSET.
-#
+
+# TODO
+_restore_dec_private_mode_values = CSI + '?' + Ps + 'r'
+
 # CSI Pt ; Pl ; Pb ; Pr ; Ps $ r
 #           Change Attributes in Rectangular Area (DECCARA), VT400 and up.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
 #             Ps denotes the SGR attributes to change: 0, 1, 4, 5, 7.
-#
+
+DECCARA = CSI + Pt + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps[0,1,4,5,7] + '$r'
+
 # CSI s     Save cursor, available only when DECLRMM is disabled (SCOSC,
 #           also ANSI.SYS).
-#
+
+SCOSC = CSI + 's'
+
 # CSI Pl ; Pr s
 #           Set left and right margins (DECSLRM), VT420 and up.  This is
 #           available only when DECLRMM is enabled.
-#
+
+DECSLRM = CSI + Ps + ';' + Ps + 's'
+
 # CSI ? Pm s
 #           Save DEC Private Mode Values.  Ps values are the same as for
 #           DECSET.
-#
+
+# TODO
+_save_dec_private_mode_values = CSI + '?' + Ps + 's'
+
 # CSI Ps ; Ps ; Ps t
 #           Window manipulation (from dtterm, as well as extensions by
 #           xterm).  These controls may be disabled using the allowWin-
@@ -1505,7 +1681,10 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #
 #             Ps >= 2 4  -> Resize to Ps lines (DECSLPP), VT340 and VT420.
 #           xterm adapts this by resizing its window.
-#
+
+# TODO
+_window_manipulation = CSI + Ps + ';' + Ps + ';' + Ps + 't'
+
 # CSI > Ps ; Ps t
 #           This xterm control sets one or more features of the title
 #           modes.  Each parameter enables a single feature.
@@ -1514,34 +1693,47 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ps = 2  -> Set window/icon labels using UTF-8.
 #             Ps = 3  -> Query window/icon labels using UTF-8.  (See dis-
 #           cussion of Title Modes)
-#
+
+# TODO
+_set_title_mode_features = CSI + '>' + Ps + ';' + Ps + 't'
+
 # CSI Ps SP t
 #           Set warning-bell volume (DECSWBV), VT520.
 #             Ps = 0  or 1  -> off.
 #             Ps = 2 , 3  or 4  -> low.
 #             Ps = 5 , 6 , 7 , or 8  -> high.
-#
+
+DECSWBV = CSI + Ps[0,1,2,3,4,5,6,7,8] + SP + 't'
+
 # CSI Pt ; Pl ; Pb ; Pr ; Ps $ t
 #           Reverse Attributes in Rectangular Area (DECRARA), VT400 and
 #           up.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
 #             Ps denotes the attributes to reverse, i.e.,  1, 4, 5, 7.
-#
+
+DECRARA = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps[1,4,5,7] + '$t'
+
 # CSI u     Restore cursor (SCORC, also ANSI.SYS).
-#
+
+SCORC = CSI + 'u'
+
 # CSI Ps SP u
 #           Set margin-bell volume (DECSMBV), VT520.
 #             Ps = 1  -> off.
 #             Ps = 2 , 3  or 4  -> low.
 #             Ps = 0 , 5 , 6 , 7 , or 8  -> high.
-#
+
+DECSMBV = CSI + Ps[0,1,2,3,4,5,6,7,8] + SP + 'u'
+
 # CSI Pt ; Pl ; Pb ; Pr ; Pp ; Pt ; Pl ; Pp $ v
 #           Copy Rectangular Area (DECCRA), VT400 and up.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
 #             Pp denotes the source page.
 #             Pt ; Pl denotes the target location.
 #             Pp denotes the target page.
-#
+
+DECCRA = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$v'
+
 # CSI Ps $ w
 #           Request presentation state report (DECRQPSR), VT320 and up.
 #             Ps = 0  -> error.
@@ -1555,7 +1747,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             DCS 2 $ u Pt ST
 #           The data string Pt is a list of the tab-stops, separated by
 #           "/" characters.
-#
+
+DECRQPSR = CSI + Ps[0,1,2] + '$w'
+
 # CSI Pt ; Pl ; Pb ; Pr ' w
 #           Enable Filter Rectangle (DECEFR), VT420 and up.
 #           Parameters are [top;left;bottom;right].
@@ -1568,6 +1762,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           ted, any locator motion will be reported.  DECELR always can-
 #           cels any prevous rectangle definition.
 #
+
+DECEFR = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + "'w"
+
 # CSI Ps x  Request Terminal Parameters (DECREQTPARM).
 #           if Ps is a "0" (default) or "1", and xterm is emulating VT100,
 #           the control sequence elicits a response of the same form whose
@@ -1579,18 +1776,25 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Pn = 1  <- 2 8  receive 38.4k baud.
 #             Pn = 1  <- clock multiplier.
 #             Pn = 0  <- STP flags.
-#
+
+DECREQTPARM = CSI + Ps[0,1] + 'x'
+
 # CSI Ps * x
 #           Select Attribute Change Extent (DECSACE), VT420 and up.
 #             Ps = 0  -> from start to end position, wrapped.
 #             Ps = 1  -> from start to end position, wrapped.
 #             Ps = 2  -> rectangle (exact).
-#
+
+DECSACE = CSI + Ps[0,1,2] + '*x'
+
 # CSI Pc ; Pt ; Pl ; Pb ; Pr $ x
 #           Fill Rectangular Area (DECFRA), VT420 and up.
 #             Pc is the character to use.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
-#
+
+# TODO
+DECFRA = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$x'
+
 # CSI Ps # y
 #           Select checksum extension (XTCHECKSUM), xterm.  The bits of Ps
 #           modify the calculation of the checksum returned by DECRQCRA:
@@ -1601,7 +1805,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             4  -> do not mask cell value to 8 bits or ignore combining
 #           characters.
 #             5  -> do not mask cell value to 7 bits.
-#
+
+XTCHECKSUM = CSI + Ps[0,1,2,3,4,5] + '#y'
+
 # CSI Pi ; Pg ; Pt ; Pl ; Pb ; Pr * y
 #           Request Checksum of Rectangular Area (DECRQCRA), VT420 and up.
 #           Response is
@@ -1610,7 +1816,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Pg is the page number.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
 #             The x's are hexadecimal digits 0-9 and A-F.
-#
+
+DECRQCRA = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '*y'
+
 # CSI Ps ; Pu ' z
 #           Enable Locator Reporting (DECELR).
 #           Valid values for the first parameter:
@@ -1623,11 +1831,15 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Pu = 0  <- or omitted -> default to character cells.
 #             Pu = 1  <- device physical pixels.
 #             Pu = 2  <- character cells.
-#
+
+DECELR = CSI + Ps[0,1,2] + ';' + Ps[0,1,2] + "'z"
+
 # CSI Pt ; Pl ; Pb ; Pr $ z
 #           Erase Rectangular Area (DECERA), VT400 and up.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
-#
+
+DECERA = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$z'
+
 # CSI Pm ' {
 #           Select Locator Events (DECSLE).
 #           Valid values for the first (and any additional parameters)
@@ -1638,7 +1850,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ps = 2  -> do not report button down transitions.
 #             Ps = 3  -> report button up transitions.
 #             Ps = 4  -> do not report button up transitions.
-#
+
+DECSLE = CSI + Ps[0,1,2,3,4] + "'{"
+
 # CSI # {
 # CSI Ps ; Ps # {
 #           Push video attributes onto stack (XTPUSHSGR), xterm.  The
@@ -1659,23 +1873,33 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #
 #           If no parameters are given, all of the video attributes are
 #           saved.  The stack is limited to 10 levels.
-#
+
+# TODO:
+XTPUSHSGR_all = CSI + '#{'
+XTPUSHSGR = CSI + Ps + ';' + Ps + '#{'
+
 # CSI Pt ; Pl ; Pb ; Pr $ {
 #           Selective Erase Rectangular Area (DECSERA), VT400 and up.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
-#
+
+DECSERA = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '${'
+
 # CSI Pt ; Pl ; Pb ; Pr # |
 #           Report selected graphic rendition (XTREPORTSGR), xterm.  The
 #           response is an SGR sequence which contains the attributes
 #           which are common to all cells in a rectangle.
 #             Pt ; Pl ; Pb ; Pr denotes the rectangle.
-#
+
+XTREPORTSGR = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '#|'
+
 # CSI Ps $ |
 #           Select columns per page (DECSCPP), VT340.
 #             Ps = 0  -> 80 columns, default if Ps omitted.
 #             Ps = 8 0  -> 80 columns.
 #             Ps = 1 3 2  -> 132 columns.
-#
+
+DECSCPP = CSI + Ps[0,80,132] + '$|'
+
 # CSI Ps ' |
 #           Request Locator Position (DECRQLP).
 #           Valid values for the parameter are:
@@ -1715,23 +1939,33 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           locator position in the xterm window, encoded as ASCII deci-
 #           mal.
 #           The "page" parameter is not used by xterm.
-#
+
+DECRQLP = CSI + Ps[0,1] + "'|"
+
 # CSI Ps * |
 #           Select number of lines per screen (DECSNLS), VT420 and up.
-#
+
+DECSNLS = CSI + Ps + '*|'
+
 # CSI # }   Pop video attributes from stack (XTPOPSGR), xterm.  Popping
 #           restores the video-attributes which were saved using XTPUSHSGR
 #           to their previous state.
-#
+
+XTPOPSGR = CSI + '#}'
+
 # CSI Pm ' }
 #           Insert Ps Column(s) (default = 1) (DECIC), VT420 and up.
-#
+
+DECIC = CSI + Pm + "'}"
+
 # CSI Pm ' ~
 #           Delete Ps Column(s) (default = 1) (DECDC), VT420 and up.
 
-# ========================================================================= #
+DECDC = CSI + Pm + "'~"
+
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Operating System Commands
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # OSC Ps ; Pt BEL
 #
@@ -1899,16 +2133,16 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #
 #             Ps = L  ; c -> Set icon label.  Sun shelltool, CDE dtterm.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Privacy Message
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # PM Pt ST  xterm implements no PM  functions; Pt is ignored.  Pt need not
 #           be printable characters.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Alt and Meta Keys
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Many keyboards have keys labeled "Alt".  Few have keys labeled "Meta".
 # However, xterm's default translations use the Meta modifier.  Common
@@ -1957,9 +2191,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #        Alt+Meta-x | ON             | ON              | ESC  x
 #        -----------+----------------+-----------------+------------
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # PC-Style Function Keys
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # If xterm does minimal translation of the function keys, it usually does
 # this with a PC-style keyboard, so PC-style function keys result.  Sun
@@ -2119,9 +2353,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # o   the scheme is not extensible, i.e., it is an ad hoc asssignment lim-
 #     ited to two modifiers (shift and control).
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # VT220-Style Function Keys
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # However, xterm is most useful as a DEC VT102 or VT220 emulator.  Set the
 # sunKeyboard resource to true to force a Sun/PC keyboard to act like a
@@ -2200,9 +2434,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #                        F20      | CSI 3 4 ~
 #                        ---------+-----------------
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # VT52-Style Function Keys
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # A VT52 does not have function keys, but it does have a numeric keypad
 # and cursor keys.  They differ from the other emulations by the prefix.
@@ -2246,9 +2480,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             = (equal)    | =        | ESC ? X     | no
 #             -------------+----------+-------------+----------
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Sun-Style Function Keys
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # The xterm program provides support for Sun keyboards more directly, by a
 # menu toggle that causes it to send Sun-style function key codes rather
@@ -2259,16 +2493,16 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # The emulation responds identically.  See the xterm-sun terminfo entry
 # for details.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # HP-Style Function Keys
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Similarly, xterm can be compiled to support HP keyboards.  See the
 # xterm-hp terminfo entry for details.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # The Alternate Screen Buffer
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # XTerm maintains two screen buffers.  The Normal Screen Buffer allows you
 # to scroll back to view saved lines of output up to the maximum set by
@@ -2294,9 +2528,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # display for the same reason: to make the details of switching indepen-
 # dent of the application that requests the switch.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Bracketed Paste Mode
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # When bracketed paste mode is set, pasted text is bracketed with control
 # sequences so that the program can differentiate pasted text from typed-
@@ -2305,9 +2539,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # followed by the pasted text, followed by
 #    ESC [ 2 0 1 ~ .
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Title Modes
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # The window- and icon-labels can be set or queried using control
 # sequences.  As a VT220-emulator, xterm "should" limit the character
@@ -2337,9 +2571,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # titles) or for encoding the title into hexadecimal when querying the
 # value.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Mouse Tracking
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # The VT widget can be set to send the mouse position and other informa-
 # tion on button presses.  These modes are typically used by editors and
@@ -2385,9 +2619,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # denoted as 1,1.  This scheme dates back to X10, though the normal mouse-
 # tracking (from X11) is more elaborate.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # X10 compatibility mode
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # X10 compatibility mode sends an escape sequence only on button press,
 # encoding the location and the mouse button pressed.  It is enabled by
@@ -2399,9 +2633,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # o   Cx and Cy are the x and y coordinates of the mouse when the button
 #     was pressed.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Normal tracking mode
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Normal tracking mode sends an escape sequence on both button press and
 # release.  Modifier key (shift, ctrl, meta) information is also sent.  It
@@ -2423,9 +2657,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # o   Cx and Cy are the x and y coordinates of the mouse event, encoded as
 #     in X10 mode.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Wheel mice
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Wheel mice may return buttons 4 and 5.  Those buttons are represented by
 # the same event codes as buttons 1 and 2 respectively, except that 64 is
@@ -2437,9 +2671,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # playing the Alternate Screen Buffer.  The initial state of Alternate
 # Scroll mode is set using the alternateScroll resource.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Other buttons
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Additional buttons are encoded like the wheel mice,
 #
@@ -2452,9 +2686,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # to use these buttons (6-11) in xterm's translation resource because
 # their names are not in the X Toolkit's symbol table.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Highlight tracking
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Mouse highlight tracking notifies a program of a button press, receives
 # a range of lines from the program, highlights the region covered by the
@@ -2497,9 +2731,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #     o   mousex and mousey give the location of the mouse at button up,
 #         which may not be over a character.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Button-event tracking
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Button-event tracking is essentially the same as normal tracking, but
 # xterm also reports button-motion events.  Motion events are reported
@@ -2517,25 +2751,25 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #     reported as CSI M B CxCy.  ( B  = 32 + 2 (button 3) + 32 (motion
 #     indicator) ).
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Any-event tracking
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Any-event mode is the same as button-event mode, except that all motion
 # events are reported, even if no mouse button is down.  It is enabled by
 # specifying 1003 to DECSET.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # FocusIn/FocusOut
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # FocusIn/FocusOut can be combined with any of the mouse events since it
 # uses a different protocol.  When set, it causes xterm to send CSI I
 # when the terminal gains focus, and CSI O  when it loses focus.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Extended coordinates
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # The original X10 mouse protocol limits the Cx and Cy ordinates to 223
 # (=255 - 32).  XTerm supports more than one scheme for extending this
@@ -2605,19 +2839,19 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           sons, the 1015 control is not recommended; it is not an
 #           improvement over 1005.
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Sixel Graphics
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # If xterm is configured as VT240, VT241, VT330, VT340 or VT382 using the
 # decTerminalID resource, it supports Sixel Graphics controls, a palleted
 # bitmap graphics system using sets of six vertical pixels as the basic
 # element.
-#
+
 # CSI Ps c  xterm responds to Send Device Attributes (Primary DA) with
 #           these additional codes:
 #             Ps = 4  -> Sixel graphics.
-#
+
 # CSI ? Pm h
 #           xterm has these additional private Set Mode values:
 #             Ps = 8 0  -> Sixel scrolling.
@@ -2625,7 +2859,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #           graphic.
 #             Ps = 8 4 5 2  -> Sixel scrolling leaves cursor to right of
 #           graphic.
-#
+
+# TODO: extend previous
+
 # DCS Pa ; Pb ; Ph q  Ps..Ps ST
 #           See:
 #
@@ -2638,23 +2874,27 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Ph -> horizontal grid size (ignored).
 #             Ps -> sixel data
 
-# ========================================================================= #
+# TODO: what?
+
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # ReGIS Graphics
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # If xterm is configured as VT125, VT240, VT241, VT330 or VT340 using the
 # decTerminalID resource, it supports Remote Graphic Instruction Set, a
 # graphics description language.
-#
+
 # CSI Ps c  xterm responds to Send Device Attributes (Primary DA) with
 #           these additional codes:
 #             Ps = 3  -> ReGIS graphics.
-#
+
 # CSI ? Pm h
 #           xterm has these additional private Set Mode values:
 #             Ps = 1 0 7 0  -> use private color registers for each
 #           graphic.
-#
+
+# TODO: extend previous
+
 # DCS Pm p Pr..Pr ST
 #           See:
 #
@@ -2667,9 +2907,11 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #             Pm = 2 -> resume command, use command display mode.
 #             Pm = 3 -> start new command, use command display mode.
 
-# ========================================================================= #
+# TODO: what?
+
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Tektronix 4014 Mode
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Most of these sequences are standard Tektronix 4014 control sequences.
 # Graph mode supports the 12-bit addressing of the Tektronix 4014.  The
@@ -2772,9 +3014,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #
 # US        Alpha Mode (Ctrl-_).
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # VT52 Mode
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Parameters for cursor movement are at the end of the ESC Y  escape
 # sequence.  Each ordinate is encoded in a single character as value+32.
@@ -2812,13 +3054,13 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 # ESC Z     Identify.
 #             -> ESC  /  Z  ("I am a VT52.").
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Further reading
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Technical manuals
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # Manuals for hardware terminals are more readily available than simi-
 # larly-detailed documentation for terminal emulators such as aixterm,
@@ -2917,9 +3159,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #     User's Manual.
 #     Tektronix, Inc.  (070-1647-00, November 1979).
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Standards
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # The DEC terminal family (VT100 through VT525) is upward-compatible,
 # using standards plus extensions, e.g., "private modes".  Not all com-
@@ -2957,9 +3199,9 @@ _request_terminfo_string = DCS + '+q' + Pt + ST
 #     Digital Equipment Corporation (A-MN-ELSM070-00-0000 Rev H, December
 #     3, 1991).
 
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Miscellaneous
-# ========================================================================= #
+# ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # A few hardware terminals survived into the 1990s only as terminal emula-
 # tors.  Documentation for these and other terminal emulators which have
