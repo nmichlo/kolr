@@ -1,34 +1,17 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
-#
-# The following license only applies to python code, excluding all
-# comments as this file is based off of the xterm control sequence
-# descriptions at https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
-#
-# Comments from invisible-island.net are kept to so that it is more easy
-# to find changes that need to be made with updates to the website.
-#
+# XTerm Control Sequences from invisible-island.net as pythonic code.
+# Basic control sequences are string variables.
+#   - eg: ESC = '\033'
+#         CSI = ESC + '['
+# Control sequences that have args can be called to return a string.
+#   - eg: SGR = CSI + Ps + 'm'
+#         SGR(0) == '\033[0m'
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
-#  MIT License
-#
-#  Copyright (c) 2019 Nathan Juraj Michlo
-#
-#  Permission is hereby granted, free of charge, to any person obtaining a copy
-#  of this software and associated documentation files (the "Software"), to deal
-#  in the Software without restriction, including without limitation the rights
-#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-#  copies of the Software, and to permit persons to whom the Software is
-#  furnished to do so, subject to the following conditions:
-#
-#  The above copyright notice and this permission notice shall be included in all
-#  copies or substantial portions of the Software.
-#
-#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-#  SOFTWARE.
+
+#  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+# Comments are from https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+# and not owned by @nmichlo, they are kept so that it is more easy to find
+# changes that need to be made with future updates to the website.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
@@ -41,12 +24,14 @@ class _Param(object):
         assert formatter is None or callable(formatter)
         self._validator = validator
         self._formatter = formatter
+
     def __call__(self, value):
         if self._validator:
             assert self._validator(value)
         if self._formatter:
             value = self._formatter(value)
         return str(value)
+
     @staticmethod
     def _allow_wrap(allowed=None, validator=None):
         if not allowed:
@@ -54,9 +39,11 @@ class _Param(object):
         else:
             allowed = set(allowed)
             return (lambda x: x in allowed) if not validator else (lambda x: validator(x) and x in allowed)
+
     def __getitem__(self, item):
         assert isinstance(item, (tuple, list, set))
         return _Param(self._allow_wrap(item, self._validator), self._formatter)
+
     def __add__(self, other: Union[str, '_Param', '_Builder']): return _Builder(self).__add__(other)
     def __radd__(self, other: Union[str, '_Param', '_Builder']): return _Builder(self).__radd__(other)
 
@@ -95,7 +82,7 @@ class _Builder(object):
 # ========================================================================= #
 # XTerm Control Sequences                                                   #
 # https://invisible-island.net/xterm/ctlseqs/ctlseqs.html                   #
-# ONLY CODE IS FROM KOLR, ALL COMMENTS BELOW ARE FROM invisible-island.net  #
+# ONLY CODE IS FROM @nmichlo, ALL COMMENTS ARE FROM invisible-island.net    #
 # ========================================================================= #
 
 # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
