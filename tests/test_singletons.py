@@ -31,15 +31,28 @@ def test_singleton():
         assert cls() is type(cls())()
 
     @singleton
-    class SingletonA:
+    class SingletonA(object):
         pass
 
     class SingletonB(Singleton):
         pass
 
-    class SingletonC(metaclass=SingletonMeta):
+    class SingletonC(object, metaclass=SingletonMeta):
         pass
 
     assert_singleton(SingletonA)
     assert_singleton(SingletonB)
     assert_singleton(SingletonC)
+
+    class SingletonChildA(SingletonA):
+        pass
+
+    class SingletonChildB(SingletonB):
+        pass
+
+    class SingletonChildC(SingletonC):
+        pass
+
+    assert_singleton(SingletonChildA)
+    assert_singleton(SingletonChildB)
+    assert_singleton(SingletonChildC)
