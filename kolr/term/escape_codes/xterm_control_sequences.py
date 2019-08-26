@@ -13,8 +13,11 @@
 #                       XFree86 Project (1996-2006)
 #                     invisible-island.net (2006-2019)
 #                updated for XTerm Patch #348 (2019/07/11)
-#
+
+# ========================================================================= #
 # Definitions
+# ========================================================================= #
+
 # c    The literal character c.
 #
 # C    A single (required) character.
@@ -27,8 +30,11 @@
 #      ues for the parameters are listed with Ps .
 #
 # Pt   A text parameter composed of printable characters.
-#
+
+# ========================================================================= #
 # Control Bytes, Characters, and Sequences
+# ========================================================================= #
+
 # ECMA-48 (aka "ISO 6429") documents C1 (8-bit) and C0 (7-bit) codes.
 # Those are respectively codes 128 to 159 and 0 to 31.  ECMA-48 avoids
 # referring to these codes as characters, because that term is associated
@@ -97,8 +103,11 @@
 #         the Linux console.  The brokenStringTerm resource setting tells
 #         xterm to exit string mode if it decodes a common control charac-
 #         ter such as carriage return before the string terminator.
-#
+
+# ========================================================================= #
 # C1 (8-Bit) Control Characters
+# ========================================================================= #
+
 # The xterm program recognizes both 8-bit and 7-bit control characters.
 # It generates 7-bit controls (by default) or 8-bit if S8C1T is enabled.
 # The following pairs of 7-bit and 8-bit control characters are equiva-
@@ -155,8 +164,11 @@
 #      Application Program Command (APC  is 0x9f).
 #
 # These control characters are used in the vtXXX emulation.
-#
+
+# ========================================================================= #
 # VT100 Mode
+# ========================================================================= #
+
 # In this document, "VT100" refers not only to VT100/VT102, but also to
 # the succession of upward-compatible terminals produced by DEC (Digital
 # Equipment Corporation) from the mid-1970s for about twenty years.  For
@@ -165,7 +177,7 @@
 #   "VT300" as VT320/VT340,
 #   "VT400" as VT420, and
 #   "VT500" as VT510/VT520/VT525.
-# 
+#
 # Most of these control sequences are standard VT102 control sequences,
 # but there is support for later DEC VT terminals (i.e., VT220, VT320,
 # VT420, VT510), as well as ECMA-48 and aixterm color controls.  The only
@@ -182,8 +194,11 @@
 #
 # Many of the features are optional; xterm can be configured and built
 # without support for them.
-#
+
+# ========================================================================= #
 # Single-character functions
+# ========================================================================= #
+
 # BEL       Bell (Ctrl-G).
 #
 # BS        Backspace (Ctrl-H).
@@ -211,8 +226,11 @@
 # TAB       Horizontal Tab (HT) (Ctrl-I).
 #
 # VT        Vertical Tab (Ctrl-K).  This is treated the same as LF.
-#
+
+# ========================================================================= #
 # Controls beginning with ESC
+# ========================================================================= #
+
 # This excludes controls where ESC  is part of a 7-bit equivalent to 8-bit
 # C1 controls, ordered by the final character(s).
 #
@@ -353,12 +371,18 @@
 # ESC }     Invoke the G2 Character Set as GR (LS2R).
 #
 # ESC ~     Invoke the G1 Character Set as GR (LS1R), VT100.
-#
+
+# ========================================================================= #
 # Application Program-Command functions
+# ========================================================================= #
+
 # APC Pt ST None.  xterm implements no APC  functions; Pt is ignored.  Pt
 #           need not be printable characters.
-#
+
+# ========================================================================= #
 # Device-Control functions
+# ========================================================================= #
+
 # DCS Ps ; Ps | Pt ST
 #           User-Defined Keys (DECUDK), VT220 and up.
 #
@@ -425,8 +449,11 @@
 #           DCS 0 + r Pt ST for invalid requests.
 #           The strings are encoded in hexadecimal (2 digits per charac-
 #           ter).
-#
+
+# ========================================================================= #
 # Functions using CSI , ordered by the final character(s)
+# ========================================================================= #
+
 # CSI Ps @  Insert Ps (Blank) Character(s) (default = 1) (ICH).
 #
 # CSI Ps SP @
@@ -1505,8 +1532,11 @@
 #
 # CSI Pm ' ~
 #           Delete Ps Column(s) (default = 1) (DECDC), VT420 and up.
-#
+
+# ========================================================================= #
 # Operating System Commands
+# ========================================================================= #
+
 # OSC Ps ; Pt BEL
 #
 # OSC Ps ; Pt ST
@@ -1672,12 +1702,18 @@
 #             Ps = l  ; c -> Set window title.  Sun shelltool, CDE dtterm.
 #
 #             Ps = L  ; c -> Set icon label.  Sun shelltool, CDE dtterm.
-#
+
+# ========================================================================= #
 # Privacy Message
+# ========================================================================= #
+
 # PM Pt ST  xterm implements no PM  functions; Pt is ignored.  Pt need not
 #           be printable characters.
-#
+
+# ========================================================================= #
 # Alt and Meta Keys
+# ========================================================================= #
+
 # Many keyboards have keys labeled "Alt".  Few have keys labeled "Meta".
 # However, xterm's default translations use the Meta modifier.  Common
 # keyboard configurations assign the Meta modifier to an "Alt" key.  By
@@ -1724,8 +1760,11 @@
 #        Alt-x      | ON             | ON              | ESC  x
 #        Alt+Meta-x | ON             | ON              | ESC  x
 #        -----------+----------------+-----------------+------------
-#
+
+# ========================================================================= #
 # PC-Style Function Keys
+# ========================================================================= #
+
 # If xterm does minimal translation of the function keys, it usually does
 # this with a PC-style keyboard, so PC-style function keys result.  Sun
 # keyboards are similar to PC keyboards.  Both have cursor and scrolling
@@ -1883,8 +1922,11 @@
 #
 # o   the scheme is not extensible, i.e., it is an ad hoc asssignment lim-
 #     ited to two modifiers (shift and control).
-#
+
+# ========================================================================= #
 # VT220-Style Function Keys
+# ========================================================================= #
+
 # However, xterm is most useful as a DEC VT102 or VT220 emulator.  Set the
 # sunKeyboard resource to true to force a Sun/PC keyboard to act like a
 # VT220 keyboard.
@@ -1961,8 +2003,11 @@
 #                        F19      | CSI 3 3 ~
 #                        F20      | CSI 3 4 ~
 #                        ---------+-----------------
-#
+
+# ========================================================================= #
 # VT52-Style Function Keys
+# ========================================================================= #
+
 # A VT52 does not have function keys, but it does have a numeric keypad
 # and cursor keys.  They differ from the other emulations by the prefix.
 # Also, the cursor keys do not change:
@@ -2004,8 +2049,11 @@
 #             9            | 9        | ESC ? y     | yes
 #             = (equal)    | =        | ESC ? X     | no
 #             -------------+----------+-------------+----------
-#
+
+# ========================================================================= #
 # Sun-Style Function Keys
+# ========================================================================= #
+
 # The xterm program provides support for Sun keyboards more directly, by a
 # menu toggle that causes it to send Sun-style function key codes rather
 # than VT220.  Note, however, that the sun and VT100 emulations are not
@@ -2014,12 +2062,18 @@
 # Only function keys are altered; keypad and cursor keys are the same.
 # The emulation responds identically.  See the xterm-sun terminfo entry
 # for details.
-#
+
+# ========================================================================= #
 # HP-Style Function Keys
+# ========================================================================= #
+
 # Similarly, xterm can be compiled to support HP keyboards.  See the
 # xterm-hp terminfo entry for details.
-#
+
+# ========================================================================= #
 # The Alternate Screen Buffer
+# ========================================================================= #
+
 # XTerm maintains two screen buffers.  The Normal Screen Buffer allows you
 # to scroll back to view saved lines of output up to the maximum set by
 # the saveLines resource.  The Alternate Screen Buffer is exactly as large
@@ -2043,16 +2097,22 @@
 # ply disable the switching.  They add other features such as clearing the
 # display for the same reason: to make the details of switching indepen-
 # dent of the application that requests the switch.
-#
+
+# ========================================================================= #
 # Bracketed Paste Mode
+# ========================================================================= #
+
 # When bracketed paste mode is set, pasted text is bracketed with control
 # sequences so that the program can differentiate pasted text from typed-
 # in text.  When bracketed paste mode is set, the program will receive:
 #    ESC [ 2 0 0 ~ ,
 # followed by the pasted text, followed by
 #    ESC [ 2 0 1 ~ .
-#
+
+# ========================================================================= #
 # Title Modes
+# ========================================================================= #
+
 # The window- and icon-labels can be set or queried using control
 # sequences.  As a VT220-emulator, xterm "should" limit the character
 # encoding for the corresponding strings to ISO-8859-1.  Indeed, it used
@@ -2080,8 +2140,11 @@
 # optional feature which decodes the string from hexadecimal (for setting
 # titles) or for encoding the title into hexadecimal when querying the
 # value.
-#
+
+# ========================================================================= #
 # Mouse Tracking
+# ========================================================================= #
+
 # The VT widget can be set to send the mouse position and other informa-
 # tion on button presses.  These modes are typically used by editors and
 # other full-screen applications that want to make use of the mouse.
@@ -2125,8 +2188,11 @@
 # the value 1.  The upper left character position on the terminal is
 # denoted as 1,1.  This scheme dates back to X10, though the normal mouse-
 # tracking (from X11) is more elaborate.
-#
+
+# ========================================================================= #
 # X10 compatibility mode
+# ========================================================================= #
+
 # X10 compatibility mode sends an escape sequence only on button press,
 # encoding the location and the mouse button pressed.  It is enabled by
 # specifying parameter 9 to DECSET.  On button press, xterm sends CSI M
@@ -2136,8 +2202,11 @@
 #
 # o   Cx and Cy are the x and y coordinates of the mouse when the button
 #     was pressed.
-#
+
+# ========================================================================= #
 # Normal tracking mode
+# ========================================================================= #
+
 # Normal tracking mode sends an escape sequence on both button press and
 # release.  Modifier key (shift, ctrl, meta) information is also sent.  It
 # is enabled by specifying parameter 1000 to DECSET.  On button press or
@@ -2157,8 +2226,11 @@
 #
 # o   Cx and Cy are the x and y coordinates of the mouse event, encoded as
 #     in X10 mode.
-#
+
+# ========================================================================= #
 # Wheel mice
+# ========================================================================= #
+
 # Wheel mice may return buttons 4 and 5.  Those buttons are represented by
 # the same event codes as buttons 1 and 2 respectively, except that 64 is
 # added to the event code.  Release events for the wheel buttons are not
@@ -2168,8 +2240,11 @@
 # is set, then cursor up/down controls are sent when the terminal is dis-
 # playing the Alternate Screen Buffer.  The initial state of Alternate
 # Scroll mode is set using the alternateScroll resource.
-#
+
+# ========================================================================= #
 # Other buttons
+# ========================================================================= #
+
 # Additional buttons are encoded like the wheel mice,
 #
 # o   by adding 64 (for buttons 6 and 7), or
@@ -2180,8 +2255,11 @@
 # respond to different button/modifier combinations.  It is not possible
 # to use these buttons (6-11) in xterm's translation resource because
 # their names are not in the X Toolkit's symbol table.
-#
+
+# ========================================================================= #
 # Highlight tracking
+# ========================================================================= #
+
 # Mouse highlight tracking notifies a program of a button press, receives
 # a range of lines from the program, highlights the region covered by the
 # mouse within that range until button release, and then sends the program
@@ -2222,8 +2300,11 @@
 #
 #     o   mousex and mousey give the location of the mouse at button up,
 #         which may not be over a character.
-#
+
+# ========================================================================= #
 # Button-event tracking
+# ========================================================================= #
+
 # Button-event tracking is essentially the same as normal tracking, but
 # xterm also reports button-motion events.  Motion events are reported
 # only if the mouse pointer has moved to a different character cell.  It
@@ -2239,18 +2320,27 @@
 #     (motion indicator) ).  Similarly, motion with button 3 down is
 #     reported as CSI M B CxCy.  ( B  = 32 + 2 (button 3) + 32 (motion
 #     indicator) ).
-#
+
+# ========================================================================= #
 # Any-event tracking
+# ========================================================================= #
+
 # Any-event mode is the same as button-event mode, except that all motion
 # events are reported, even if no mouse button is down.  It is enabled by
 # specifying 1003 to DECSET.
-#
+
+# ========================================================================= #
 # FocusIn/FocusOut
+# ========================================================================= #
+
 # FocusIn/FocusOut can be combined with any of the mouse events since it
 # uses a different protocol.  When set, it causes xterm to send CSI I
 # when the terminal gains focus, and CSI O  when it loses focus.
-#
+
+# ========================================================================= #
 # Extended coordinates
+# ========================================================================= #
+
 # The original X10 mouse protocol limits the Cx and Cy ordinates to 223
 # (=255 - 32).  XTerm supports more than one scheme for extending this
 # range, by changing the protocol encoding:
@@ -2318,8 +2408,11 @@
 #           down), and the Window manipulation controls.  For these rea-
 #           sons, the 1015 control is not recommended; it is not an
 #           improvement over 1005.
-#
+
+# ========================================================================= #
 # Sixel Graphics
+# ========================================================================= #
+
 # If xterm is configured as VT240, VT241, VT330, VT340 or VT382 using the
 # decTerminalID resource, it supports Sixel Graphics controls, a palleted
 # bitmap graphics system using sets of six vertical pixels as the basic
@@ -2348,8 +2441,11 @@
 #             Pb -> background color option
 #             Ph -> horizontal grid size (ignored).
 #             Ps -> sixel data
-#
+
+# ========================================================================= #
 # ReGIS Graphics
+# ========================================================================= #
+
 # If xterm is configured as VT125, VT240, VT241, VT330 or VT340 using the
 # decTerminalID resource, it supports Remote Graphic Instruction Set, a
 # graphics description language.
@@ -2374,8 +2470,11 @@
 #             Pm = 1 -> start new command, use fullscreen mode.
 #             Pm = 2 -> resume command, use command display mode.
 #             Pm = 3 -> start new command, use command display mode.
-#
+
+# ========================================================================= #
 # Tektronix 4014 Mode
+# ========================================================================= #
+
 # Most of these sequences are standard Tektronix 4014 control sequences.
 # Graph mode supports the 12-bit addressing of the Tektronix 4014.  The
 # major features missing are the write-through and defocused modes.  This
@@ -2476,8 +2575,11 @@
 # RS        Incremental Plot Mode (Ctrl-^ ).
 #
 # US        Alpha Mode (Ctrl-_).
-#
+
+# ========================================================================= #
 # VT52 Mode
+# ========================================================================= #
+
 # Parameters for cursor movement are at the end of the ESC Y  escape
 # sequence.  Each ordinate is encoded in a single character as value+32.
 # For example, !  is 1.  The screen coordinate system is 0-based.
@@ -2513,9 +2615,15 @@
 #
 # ESC Z     Identify.
 #             -> ESC  /  Z  ("I am a VT52.").
-#
+
+# ========================================================================= #
 # Further reading
+# ========================================================================= #
+
+# ========================================================================= #
 # Technical manuals
+# ========================================================================= #
+
 # Manuals for hardware terminals are more readily available than simi-
 # larly-detailed documentation for terminal emulators such as aixterm,
 # shelltool, dtterm.
@@ -2612,8 +2720,11 @@
 # o   4014 and 4014-1 Computer Display Terminal
 #     User's Manual.
 #     Tektronix, Inc.  (070-1647-00, November 1979).
-#
+
+# ========================================================================= #
 # Standards
+# ========================================================================= #
+
 # The DEC terminal family (VT100 through VT525) is upward-compatible,
 # using standards plus extensions, e.g., "private modes".  Not all com-
 # monly-used features are standard.  For example, scrolling regions are
@@ -2649,8 +2760,11 @@
 # o   DEC STD 070 Video Systems Reference Manual.
 #     Digital Equipment Corporation (A-MN-ELSM070-00-0000 Rev H, December
 #     3, 1991).
-#
+
+# ========================================================================= #
 # Miscellaneous
+# ========================================================================= #
+
 # A few hardware terminals survived into the 1990s only as terminal emula-
 # tors.  Documentation for these and other terminal emulators which have
 # influenced xterm are generally available only in less-accessible and
