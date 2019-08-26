@@ -1,7 +1,35 @@
-
-# ========================================================================= #
-# BEGIN - HELPER                                                            #
-# ========================================================================= #
+#  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+#
+# The following license only applies to python code, excluding all
+# comments as this file is based off of the xterm control sequence
+# descriptions at https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+#
+# Comments from invisible-island.net are kept to so that it is more easy
+# to find changes that need to be made with updates to the website.
+#
+#  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+#  MIT License
+#
+#  Copyright (c) 2019 Nathan Juraj Michlo
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files (the "Software"), to deal
+#  in the Software without restriction, including without limitation the rights
+#  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#  copies of the Software, and to permit persons to whom the Software is
+#  furnished to do so, subject to the following conditions:
+#
+#  The above copyright notice and this permission notice shall be included in all
+#  copies or substantial portions of the Software.
+#
+#  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#  SOFTWARE.
+#  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
 from typing import Union
@@ -25,7 +53,7 @@ class _Param(object):
             return None if not validator else validator
         else:
             allowed = set(allowed)
-            return (lambda x: x in allowed) if not validator else (lambda x: validator(x) or x in allowed)
+            return (lambda x: x in allowed) if not validator else (lambda x: validator(x) and x in allowed)
     def __getitem__(self, item):
         assert isinstance(item, (tuple, list, set))
         return _Param(self._allow_wrap(item, self._validator), self._formatter)
@@ -65,9 +93,10 @@ class _Builder(object):
 
 
 # ========================================================================= #
-# END - HELPER                                                              #
+# XTerm Control Sequences                                                   #
+# https://invisible-island.net/xterm/ctlseqs/ctlseqs.html                   #
+# ONLY CODE IS FROM KOLR, ALL COMMENTS BELOW ARE FROM invisible-island.net  #
 # ========================================================================= #
-
 
 # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 #
@@ -99,7 +128,7 @@ c = 'c'
 
 # C    A single (required) character.
 
-__C_vldt = lambda x: type(x) == str and len(x) == 1
+__C_vldt = lambda x: type(x) == str and (len(x) == 1 or len(x) == 2)
 C = _Param(validator=__C_vldt, formatter=None)
 
 # Ps   A single (usually optional) numeric parameter, composed of one or
@@ -408,11 +437,11 @@ _ansi_conformance_level_3 = ESC + SP + 'N'
 
 # ESC # 3   DEC double-height line, top half (DECDHL), VT100.
 
-DECDHL = ESC + '#3'
+DECDHL_top = ESC + '#3'
 
 # ESC # 4   DEC double-height line, bottom half (DECDHL), VT100.
 
-DECDHL = ESC + '#4'
+DECDHL_bottom = ESC + '#4'
 
 # ESC # 5   DEC single-width line (DECSWL), VT100.
 
@@ -641,6 +670,7 @@ DECRQSS = DCS + '$q' + Pt['m','"p',SP+'q','"q','r','s','t','$','*'] + ST
 #             Ps = 1  -> DECCIR
 #             Ps = 2  -> DECTABSR
 
+# TODO
 DECRSPS = DCS + Ps[1,2] + '$t' + Pt + ST
 
 # DCS + p Pt ST
@@ -735,7 +765,7 @@ CHT = CSI + Ps + 'I'
 #             Ps = 2  -> Erase All.
 #             Ps = 3  -> Erase Saved Lines (xterm).
 
-ED = CSI + Ps + 'J'
+ED = CSI + Ps[0,1,2,3] + 'J'
 
 # CSI ? Ps J
 #           Erase in Display (DECSED), VT220.
@@ -744,14 +774,14 @@ ED = CSI + Ps + 'J'
 #             Ps = 2  -> Selective Erase All.
 #             Ps = 3  -> Selective Erase Saved Lines (xterm).
 
-DECSED = CSI + '?' + Ps + 'J'
+DECSED = CSI + '?' + Ps[0,1,2,3] + 'J'
 
 # CSI Ps K  Erase in Line (EL), VT100.
 #             Ps = 0  -> Erase to Right (default).
 #             Ps = 1  -> Erase to Left.
 #             Ps = 2  -> Erase All.
 
-EL = CSI + Ps + 'K'
+EL = CSI + Ps[0,1,2] + 'K'
 
 # CSI ? Ps K
 #           Erase in Line (DECSEL), VT220.
@@ -759,7 +789,7 @@ EL = CSI + Ps + 'K'
 #             Ps = 1  -> Selective Erase to Left.
 #             Ps = 2  -> Selective Erase All.
 
-DECSEL = CSI + '?' + Ps + 'K'
+DECSEL = CSI + '?' + Ps[0,1,2] + 'K'
 
 # CSI Ps L  Insert Ps Line(s) (default = 1) (IL).
 
@@ -821,11 +851,12 @@ SU = CSI + Ps + 'S'
 #               graphics geometry does not affect the window size.
 #
 
-# TODO: CSI + '?' + Pi + ';' + Pa + ';' + Pv + 'S'
+# TODO
+_graphics_item_action_value = CSI + '?' + Ps[1,2,3] + ';' + Ps[1,2,3,4] + ';' + Pm + 'S'
 
 # CSI Ps T  Scroll down Ps lines (default = 1) (SD), VT420.
 
-SD = CSI + Ps + 'T'
+SD_vt420 = CSI + Ps + 'T'
 
 # CSI Ps ; Ps ; Ps ; Ps ; Ps T
 #           Initiate highlight mouse tracking.  Parameters are
@@ -862,7 +893,7 @@ CBT = CSI + Ps + 'Z'
 #           This was a publication error in the original ECMA-48 5th edi-
 #           tion (1991) corrected in 2003.
 
-SD = CSI + Ps + '^'
+SD_ecma48 = CSI + Ps + '^'
 
 # CSI Pm `  Character Position Absolute  [column] (default = [row,1])
 #           (HPA).
