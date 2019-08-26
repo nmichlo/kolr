@@ -79,6 +79,9 @@ class Emitter(object):
 
     def emit(self, key, *args, **kwargs):
         return self[key].notify(*args, **kwargs)
+    
+    def emit_func(self, key):
+        return self[key].notify
 
 
 # ========================================================================= #

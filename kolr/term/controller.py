@@ -22,14 +22,19 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
-from kolr.term.interface import TerminalInterface
+
+
+import sys
+import traceback
+from kolr.term.interface import TermInput, TermOutput
 from kolr.util.events import Emitter
-from kolr.term import escape_codes as ec
 from kolr.util.loop import RenderLoop
-from sys import stdout, stdin, stderr
-import readchar
-import os
 import atexit
+
+# TODO: REMOVE prompt_toolkit DEPENDENCY
+import prompt_toolkit.key_binding
+import prompt_toolkit.key_binding.key_processor
+import prompt_toolkit.keys
 
 
 # ========================================================================= #
@@ -40,102 +45,144 @@ import atexit
 EVENT_RESIZE = 'resize'
 EVENT_MOUSE = 'mouse'
 EVENT_KEY = 'key'
+
+EVENT_APP_START = 'app_start'
+EVENT_APP_END = 'app_end'
+
 EVENT_RENDER = 'render'
 EVENT_UPDATE = 'update'
 
 
-class TerminalController(RenderLoop):
+class TerminalController(object):
 
-    def __init__(self, frame_rate=10, tick_rate=0):
-        super().__init__(frame_rate=frame_rate, tick_rate=tick_rate, max_frame_skip=-1)
-        # callbacks TODO: replace with event manager
-        self._emitter = Emitter([EVENT_RESIZE, EVENT_MOUSE, EVENT_KEY, EVENT_RENDER])
-        # loop vars
+    def __init__(self, frame_rate=5, tick_rate=2):
+        super().__init__()
+
+        # INIT: event manager
+        self._emitter = Emitter([EVENT_APP_START, EVENT_APP_END, EVENT_RESIZE, EVENT_MOUSE, EVENT_KEY, EVENT_RENDER, EVENT_UPDATE])
+
+        # INIT: terminal interface
         self._term_size = (None, None)
-        self._term_interface = TerminalInterface()
+        self._term_input = TermInput()
+        self._term_output = TermOutput()
 
-    # - - - - - - - - - - - - - - - - EVENT - - - - - - - - - - - - - - - - #
+        # INIT: game loop
+        self._loop = RenderLoop(
+            frame_rate=frame_rate,
+            tick_rate=tick_rate,
+            max_frame_skip=-1,
+            on_loop_start=self._on_loop_start,
+            on_loop_event=self._on_loop_event,
+            on_loop_update=self._emitter.emit_func(EVENT_UPDATE),
+            on_loop_render=self._emitter.emit_func(EVENT_RENDER),
+            on_loop_end=self._on_loop_end,
+        )
 
-    def on(self, key, observer=None):
-        return self._emitter.on(key, observer)
+        # EXTEND: RenderLoop
+        self.start = self._loop.start
+        self.stop = self._loop.stop
 
-    def off(self, key, observer):
-        return self._emitter.off(key, observer)
+        # EXTEND: Emitter
+        self.on = self._emitter.on
+        self.off = self._emitter.off
 
-    # - - - - - - - - - - - - - - - -NCURSES- - - - - - - - - - - - - - - - #
+        # EXTEND: TerminalInterface
+        self.clear = self._term_output.clear
+        self.cursor_goto = self._term_output.cursor_goto
+        self.flush = self._term_output.flush
+
+        # TODO: REMOVE prompt_toolkit DEPENDENCY
+        self._key_bindings = prompt_toolkit.key_binding.KeyBindings()
+        self._key_processor = prompt_toolkit.key_binding.key_processor.KeyProcessor(self._key_bindings)
+
+        # EXTEND: KeyBindings
+        self.kb = lambda key, *keys: self._key_bindings.add(key, *keys)
+        self.kb_add = lambda key, *keys, func=None: self._key_bindings.add(key, *keys) if func is None else self._key_bindings.add(key, *keys)(func)
+        self.kb_del = lambda *func_or_keys: self._key_bindings.remove(*func_or_keys)
+
+    # - - - - - - - - - - - - - - - INTERFACE - - - - - - - - - - - - - - - #
+
+    def write_str(self, string, x=None, y=None):
+        if x is not None or y is not None:
+            self.cursor_goto(x or 0, y or 0)
+        self._term_output.write(string)
+
+    # - - - - - - - - - - - - - - - TERMINALS - - - - - - - - - - - - - - - #
+
+    def _set_term_defaults(self, enable):
+        # INPUT
+        self._term_input.set_raw_mode(enable)
+        # OUTPUT
+        self._term_output.set_alternate_buffer(enable)
+        self._term_output.set_mouse_support(enable)
+        self._term_output.set_bracket_paste(enable)
+        self._term_output.set_auto_wrap(not enable)
 
     def _initialise(self):
-        # Raw Input
-        self._term_interface.init_term()
-        # CSI Params
-        stdout.write(ec.csi.CH)   # Cursor        : Hide
-        stdout.write(ec.csi.BPE)  # Bracket Paste : Enable
-        stdout.write(ec.csi.SBE)  # Screen Buffer : Enable
-        # stdout.flush()
+        self._set_term_defaults(True)
 
     def _finalise(self):
-        # CSI Params
-        stdout.write(ec.csi.SBD)  # Screen Buffer : Disable
-        stdout.write(ec.csi.BPD)  # Bracket Paste : Disable
-        stdout.write(ec.csi.CS)   # Cursor        : Show
-        # stdout.flush()
-        # Raw Input
-        self._term_interface.reset_term()
+        self._set_term_defaults(False)
 
     def _exit_finalise(self):
         self._finalise()
         print("Encountered Unknown Error")
 
+    # - - - - - - - - - - - - - - - - EVENT - - - - - - - - - - - - - - - - #
+
+    # def _handle_key_event(self, char):
+    #     if char.key == 'c-c' or char.key == 'escape':
+    #         return False
+    #     else:
+    #         self._emitter.emit(EVENT_KEY, (char.key, char.data))
+    #
+    # def _handle_mouse_event(self, char):
+    #     try:
+    #         code, x, y = char.data[3:-1].split(';')
+    #         action = None
+    #         if code == '0':
+    #             action = 'click-press' if (char.data[-1] == 'M') else 'click-release'
+    #         elif code == '65':
+    #             action = 'scroll-down'
+    #         elif code == '64':
+    #             action = 'scroll-up'
+    #         self._emitter.emit(EVENT_MOUSE, (int(x), int(y), action))
+    #     except Exception as e:
+    #         traceback.print_exc()
+    #         sys.stderr.write('An unexpected error occurred! {}'.format(e))
+    #         sys.stderr.flush()
+
+    def _do_character_polling(self):
+        while self._term_input.has_char():
+            char = self._term_input.get_char()
+            self._key_processor.feed(char)
+            # if char.key in {Keys.Vt100MouseEvent, Keys.WindowsMouseEvent}:
+            #     self._emitter.emit(EVENT_MOUSE, char.data)
+            # else:
+            #     self._emitter.emit(EVENT_KEY, (char.key, char.data))
+        self._key_processor.process_keys()
+
+    def _do_size_polling(self):
+        size = self._term_output.get_size()
+        if size != self._term_size:
+            self._term_size = size
+            self._emitter.emit(EVENT_RESIZE, size[0], size[1])  # w, h
+
     # - - - - - - - - - - - - - - - -LOOPING- - - - - - - - - - - - - - - - #
 
     def _on_loop_start(self):
-        self._initialise()
+        self._set_term_defaults(True)
         atexit.register(self._exit_finalise)
+        self._emitter.emit(EVENT_APP_START)
 
-    def _on_loop_event(self) -> bool:
-        self._process_events()
-        return True
-
-    def _process_events(self):
-        # TERMINAL SIZE
-        term_size = os.get_terminal_size()
-        if term_size != self._term_size:
-            self._term_size = term_size
-            self._emitter.emit(EVENT_RESIZE, term_size[0], term_size[1])  # w, h
-        # KEY PRESSES
-        while self._term_interface.has_char():
-            self._emitter.emit(EVENT_KEY, readchar.readkey(self._term_interface.get_char))
-        # MOUSE PRESSES
-        pass
-        # CONTINUE RUNNING
-        return True
-
-    def _on_loop_update(self):
-        self._process_events()
-        self._emitter.emit(EVENT_UPDATE)
-
-    def _on_loop_render(self, delta):
-        self._emitter.emit(EVENT_RENDER, delta)
+    def _on_loop_event(self):
+        self._do_size_polling()
+        self._do_character_polling()
 
     def _on_loop_end(self):
         atexit.unregister(self._exit_finalise)
         self._finalise()
-
-    # - - - - - - - - - - - - - - - INTERFACE - - - - - - - - - - - - - - - #
-
-    def clear(self):
-        stdout.write(ec.csi.ed(2))
-
-    def write_str(self, string, x=0, y=0):
-        stdout.write(ec.csi.cup(y + 1, x + 1))
-        stdout.write(string)
-
-    def write_char(self, char, x=0, y=0):
-        assert len(char) == 1
-        self.write_str(char, x + 1, y + 1)
-
-    def flush(self):
-        stdout.flush()
+        self._emitter.emit(EVENT_APP_END)
 
 
 # ========================================================================= #
