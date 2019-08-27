@@ -815,17 +815,33 @@ class sgr(metaclass=ParamMeta):
     FAINT                       = __seq(2)   # Ps = 2  -> Faint, decreased intensity, ECMA-48 2nd.
     ITALIC                      = __seq(3)   # Ps = 3  -> Italicized, ECMA-48 2nd.
     UNDERLINE                   = __seq(4)   # Ps = 4  -> Underlined, VT100.
+    # BLINK_RAPID                 = __seq(6)   # Ps = 5  -> Blink, VT100. This appears as Bold in X11R6 xterm.
     INVERT                      = __seq(7)   # Ps = 7  -> Inverse, VT100.
     CONCEAL                     = __seq(8)   # Ps = 8  -> Invisible, i.e., hidden, ECMA-48 2nd, VT300.
     STRIKETHROUGH               = __seq(9)   # Ps = 9  -> Crossed-out characters, ECMA-48 3rd.
+    # FONT_PRIMARY              = __seq(10)
+    # ↓↓↓↓↓ 11-19 Alternate Font ↓↓↓↓↓
+    # FONT_ALT_1                = __seq(11)
+    # FONT_ALT_2                = __seq(12)
+    # FONT_ALT_3                = __seq(13)
+    # FONT_ALT_4                = __seq(14)
+    # FONT_ALT_5                = __seq(15)
+    # FONT_ALT_6                = __seq(16)
+    # FONT_ALT_7                = __seq(17)
+    # FONT_ALT_8                = __seq(18)
+    # FONT_ALT_9                = __seq(19)
+    # ↑↑↑↑↑ 11-19 Alternate Font ↑↑↑↑↑
+    # FRANKTUR                  = __seq(20)
     RESET_BOLD                  = __seq(21)  # Ps = 2 1  -> Doubly-underlined, ECMA-48 3rd.
     RESET_INTENSITY             = __seq(22)  # Ps = 2 2  -> Normal (neither bold nor faint), ECMA-48 3rd.
     RESET_ITALIC                = __seq(23)  # Ps = 2 3  -> Not italicized, ECMA-48 3rd.
     RESET_UNDERLINE             = __seq(24)  # Ps = 2 4  -> Not underlined, ECMA-48 3rd.
     RESET_BLINK                 = __seq(25)  # Ps = 2 5  -> Steady (not blinking), ECMA-48 3rd.
+    # 26 <RESET BLINK FAST?>
     RESET_INVERSE               = __seq(27)  # Ps = 2 7  -> Positive (not inverse), ECMA-48 3rd.
     RESET_CONCEAL               = __seq(28)  # Ps = 2 8  -> Visible, i.e., not hidden, ECMA-48 3rd, VT300.
     RESET_STRIKETHROUGH         = __seq(29)  # Ps = 2 9  -> Not crossed-out, ECMA-48 3rd.
+    # ↓↓↓↓↓ 30-37 Set Foreground Color ↓↓↓↓
     FG_BLACK                    = __seq(30)  # Ps = 3 0  -> Set foreground color to Black.
     FG_RED                      = __seq(31)  # Ps = 3 1  -> Set foreground color to Red.
     FG_GREEN                    = __seq(32)  # Ps = 3 2  -> Set foreground color to Green.
@@ -834,8 +850,10 @@ class sgr(metaclass=ParamMeta):
     FG_MAGENTA                  = __seq(35)  # Ps = 3 5  -> Set foreground color to Magenta.
     FG_CYAN                     = __seq(36)  # Ps = 3 6  -> Set foreground color to Cyan.
     FG_WHITE                    = __seq(37)  # Ps = 3 7  -> Set foreground color to White.
+    # ↑↑↑↑↑ 30-37 Set Foreground Color ↑↑↑↑
     fg_select                   = _private__sel_(38)
     RESET_FG                    = __seq(39)  # Ps = 3 9  -> Set foreground color to default, ECMA-48 3rd.
+    # ↓↓↓↓↓ 40-47 Set Background Color ↓↓↓↓
     BG_BLACK                    = __seq(40)  # Ps = 4 0  -> Set background color to Black.
     BG_RED                      = __seq(41)  # Ps = 4 1  -> Set background color to Red.
     BG_GREEN                    = __seq(42)  # Ps = 4 2  -> Set background color to Green.
@@ -844,8 +862,23 @@ class sgr(metaclass=ParamMeta):
     BG_MAGENTA                  = __seq(45)  # Ps = 4 5  -> Set background color to Magenta.
     BG_CYAN                     = __seq(46)  # Ps = 4 6  -> Set background color to Cyan.
     BG_WHITE                    = __seq(47)  # Ps = 4 7  -> Set background color to White.
+    # ↑↑↑↑↑ 40-47 Set Background Color ↑↑↑↑
     bg_select                   = _private__sel_(48)
     RESET_BG                    = __seq(49)  # Ps = 4 9  -> Set background color to default, ECMA-48 3rd.
+    # 50 <UNUSED>
+    # FRAME                     = __seq(51)
+    # ENCIRCLE                  = __seq(52)
+    # OVERLINE                  = __seq(53)
+    # RESET_FRAME               = __seq(54)
+    # RESET_OVERLINE            = __seq(55)
+    # 56-59 <UNUSED>
+    # IDEOGRAM_UNDERLINE        = __seq(60)
+    # IDEOGRAM_DOUBLE_UNDERLINE = __seq(61)
+    # IDEOGRAM_OVERLINE         = __seq(62)
+    # IDEOGRAM_DOUBLE_OVERLINE  = __seq(63)
+    # IDEOGRAM_STRESS           = __seq(64)
+    # RESET_IDEOGRAM            = __seq(65)
+    # 66-89 <UNUSED>
 
     # Some of the above note the edition of ECMA-48 which first
     # describes a feature.  In its successive editions from 1979 to
@@ -876,6 +909,7 @@ class sgr(metaclass=ParamMeta):
     # the ISO color codes are the first 8 of a set of 16.  Then the
     # aixterm colors are the bright versions of the ISO colors:
 
+    # ↓↓↓↓↓ 90-97 Set Bright Foreground Col
     FG_BRIGHT_BLACK           = __seq(90)   # Ps = 9 0  -> Set foreground color to Black.
     FG_BRIGHT_RED             = __seq(91)   # Ps = 9 1  -> Set foreground color to Red.
     FG_BRIGHT_GREEN           = __seq(92)   # Ps = 9 2  -> Set foreground color to Green.
@@ -884,6 +918,9 @@ class sgr(metaclass=ParamMeta):
     FG_BRIGHT_MAGENTA         = __seq(95)   # Ps = 9 5  -> Set foreground color to Magenta.
     FG_BRIGHT_CYAN            = __seq(96)   # Ps = 9 6  -> Set foreground color to Cyan.
     FG_BRIGHT_WHITE           = __seq(97)   # Ps = 9 7  -> Set foreground color to White.
+    # ↑↑↑↑↑ 90-97 Set Bright Foreground Col
+    # 98-99 <UNUSED>
+    # ↓↓↓↓↓ 100-107 Set Bright Background C
     BG_BRIGHT_BLACK           = __seq(100)  # Ps = 1 0 0  -> Set background color to Black.
     BG_BRIGHT_RED             = __seq(101)  # Ps = 1 0 1  -> Set background color to Red.
     BG_BRIGHT_GREEN           = __seq(102)  # Ps = 1 0 2  -> Set background color to Green.
@@ -892,6 +929,7 @@ class sgr(metaclass=ParamMeta):
     BG_BRIGHT_MAGENTA         = __seq(105)  # Ps = 1 0 5  -> Set background color to Magenta.
     BG_BRIGHT_CYAN            = __seq(106)  # Ps = 1 0 6  -> Set background color to Cyan.
     BG_BRIGHT_WHITE           = __seq(107)  # Ps = 1 0 7  -> Set background color to White.
+    # ↑↑↑↑↑ 100-107 Set Bright Background C
 
     # If xterm is compiled with the 16-color support disabled, it supports the following, from rxvt:
     #   Ps = 1 0 0  -> Set foreground and background color to default.
