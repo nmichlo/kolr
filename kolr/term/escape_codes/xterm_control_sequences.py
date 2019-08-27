@@ -4,8 +4,8 @@
 #   - eg: ESC = '\033'
 #         CSI = ESC + '['
 # Control sequences that have args can be called to return a string.
-#   - eg: SGR = CSI + Ps + 'm'
-#         SGR(0) == '\033[0m'
+#   - eg: sgr = CSI + Ps + 'm'
+#         sgr(0) == '\033[0m' == sgr.RESET
 # ========================================================================= #
 
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
@@ -970,7 +970,6 @@ class sgr(metaclass=ParamMeta):
     # If xterm is compiled with direct-color support, and the
     # resource directColor is true, then rather than choosing the
     # closest match, xterm asks the X server to directly render a given color.
-
 
 # CSI > Ps ; Ps m
 class _rd(metaclass=ParamMeta):
