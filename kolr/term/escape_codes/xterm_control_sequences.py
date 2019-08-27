@@ -1193,15 +1193,15 @@ class _tmfs(metaclass=ParamMeta):
 class decswbv(metaclass=ParamMeta):
     """Set warning-bell volume (DECSWBV), VT520."""
     __seq = CSI + Ps[0, 1, 2, 3, 4, 5, 6, 7, 8] + ' t'
-    V0 = __seq(0)  # Ps = 0  or 1  -> off.
-    V1 = __seq(1)  # Ps = 0  or 1  -> off.
-    V2 = __seq(2)  # Ps = 2 , 3  or 4  -> low.
-    V3 = __seq(3)  # Ps = 2 , 3  or 4  -> low.
-    V4 = __seq(4)  # Ps = 2 , 3  or 4  -> low.
-    V5 = __seq(5)  # Ps = 5 , 6 , 7 , or 8  -> high.
-    V6 = __seq(6)  # Ps = 5 , 6 , 7 , or 8  -> high.
-    V7 = __seq(7)  # Ps = 5 , 6 , 7 , or 8  -> high.
-    V8 = __seq(8)  # Ps = 5 , 6 , 7 , or 8  -> high.
+    V0_OFF  = __seq(0)  # Ps = 0  or 1  -> off.
+    V1_OFF  = __seq(1)  # Ps = 0  or 1  -> off.
+    V2_LOW  = __seq(2)  # Ps = 2 , 3  or 4  -> low.
+    V3_LOW  = __seq(3)  # Ps = 2 , 3  or 4  -> low.
+    V4_LOW  = __seq(4)  # Ps = 2 , 3  or 4  -> low.
+    V5_HIGH = __seq(5)  # Ps = 5 , 6 , 7 , or 8  -> high.
+    V6_HIGH = __seq(6)  # Ps = 5 , 6 , 7 , or 8  -> high.
+    V7_HIGH = __seq(7)  # Ps = 5 , 6 , 7 , or 8  -> high.
+    V8_HIGH = __seq(8)  # Ps = 5 , 6 , 7 , or 8  -> high.
 
 
 decrara = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps[1,4,5,7] + '$t'  # CSI Pt ; Pl ; Pb ; Pr ; Ps $ t    Reverse Attributes in Rectangular Area (DECRARA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle. Ps denotes the attributes to reverse, i.e.,  1, 4, 5, 7.
@@ -1213,10 +1213,10 @@ class decsmbv(metaclass=ParamMeta):
     """Set margin-bell volume (DECSMBV), VT520."""
     __seq = CSI + Ps[0, 1, 2, 3, 4, 5, 6, 7, 8] + ' u'
     V0_HIGH = __seq(0)  # Ps = 0 , 5 , 6 , 7 , or 8  -> high.
-    V1_OFF = __seq(1)  # Ps = 1  -> off.
-    V2_LOW = __seq(2)  # Ps = 2 , 3  or 4  -> low.
-    V3_LOW = __seq(3)  # Ps = 2 , 3  or 4  -> low.
-    V4_LOW = __seq(4)  # Ps = 2 , 3  or 4  -> low.
+    V1_OFF  = __seq(1)  # Ps = 1  -> off.
+    V2_LOW  = __seq(2)  # Ps = 2 , 3  or 4  -> low.
+    V3_LOW  = __seq(3)  # Ps = 2 , 3  or 4  -> low.
+    V4_LOW  = __seq(4)  # Ps = 2 , 3  or 4  -> low.
     V5_HIGH = __seq(5)  # Ps = 0 , 5 , 6 , 7 , or 8  -> high.
     V6_HIGH = __seq(6)  # Ps = 0 , 5 , 6 , 7 , or 8  -> high.
     V7_HIGH = __seq(7)  # Ps = 0 , 5 , 6 , 7 , or 8  -> high.
