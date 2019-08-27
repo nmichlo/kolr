@@ -574,13 +574,12 @@ class decsel(metaclass=ParamMeta):
     ERASE_ALL   = __seq(2) # Ps = 2  -> Selective Erase All.
 
 
-il  = CSI + Ps + 'L'  # CSI Ps L  Insert Ps Line(s) (default = 1) (IL).
-dl  = CSI + Ps + 'M'  # CSI Ps M  Delete Ps Line(s) (default = 1) (DL).
-dch = CSI + Ps + 'P'  # CSI Ps P  Delete Ps Character(s) (default = 1) (DCH).
-su  = CSI + Ps + 'S'  # CSI Ps S  Scroll up Ps lines (default = 1) (SU), VT420, ECMA-48.
-# <MOVED> CSI ? Pi ; Pa ; Pv S
-sd_vt420 = CSI + Ps + 'T'                                           # CSI Ps T                          Scroll down Ps lines (default = 1) (SD), VT420.
-_hmt = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + 'T'   # CSI Ps ; Ps ; Ps ; Ps ; Ps T      Initiate highlight mouse tracking.  Parameters are [func;startx;starty;firstrow;lastrow].  See the section Mouse Tracking.
+il       = CSI + Ps + 'L'                            # CSI Ps L                       | Insert Ps Line(s) (default = 1) (IL).
+dl       = CSI + Ps + 'M'                            # CSI Ps M                       | Delete Ps Line(s) (default = 1) (DL).
+dch      = CSI + Ps + 'P'                            # CSI Ps P                       | Delete Ps Character(s) (default = 1) (DCH).
+su       = CSI + Ps + 'S'                            # CSI Ps S                       | Scroll up Ps lines (default = 1) (SU), VT420, ECMA-48.
+sd_vt420 = CSI + Ps + 'T'                            # CSI Ps T                       | Scroll down Ps lines (default = 1) (SD), VT420.
+_hmt     = CSI + Ps+';'+Ps+';'+Ps+';'+Ps+';'+Ps+'T'  # CSI Ps ; Ps ; Ps ; Ps ; Ps T   | Initiate highlight mouse tracking.  Parameters are [func;startx;starty;firstrow;lastrow].  See the section Mouse Tracking.
 
 
 # CSI > Ps ; Ps T
@@ -602,18 +601,15 @@ class _tmfr(metaclass=ParamMeta):
     def no_query_labels_utf8(x): return _tmfr.__seq(3, x)  # Ps = 3  -> Do not query window/icon labels using UTF-8.
 
 
-ech       = CSI + Ps + 'X'  # CSI Ps X      Erase Ps Character(s) (default = 1) (ECH).
-cbt       = CSI + Ps + 'Z'  # CSI Ps Z      Cursor Backward Tabulation Ps tab stops (default = 1) (CBT)
-sd_ecma48 = CSI + Ps + '^'  # CSI Ps ^      Scroll down Ps lines (default = 1) (SD), ECMA-48. This was a publication error in the original ECMA-48 5th edition (1991) corrected in 2003.
-hpa       = CSI + Pm + '`'  # CSI Pm `      Character Position Absolute  [column] (default = [row,1]) (HPA).
-hpr       = CSI + Pm + 'a'  # CSI Pm a      Character Position Relative  [columns] (default = [row,col+1]) (HPR).
-rep       = CSI + Ps + 'b'  # CSI Ps b      Repeat the preceding graphic character Ps times (REP).
-# <MOVED> CSI Ps c
-# <MOVED> CSI = Ps c
-# <MOVED> CSI > Ps c
-vpa = CSI + Pm + 'd'             # CSI Pm d          Line Position Absolute  [row] (default = [1,column]) (VPA).
-vpr = CSI + Pm + 'e'             # CSI Pm e          Line Position Relative  [rows] (default = [row+1,column]) (VPR).
-hvp = CSI + Ps + ';' + Ps + 'f'  # CSI Ps ; Ps f     Horizontal and Vertical Position [row;column] (default = [1,1]) (HVP).
+ech       = CSI + Ps + 'X'       # CSI Ps X        | Erase Ps Character(s) (default = 1) (ECH).
+cbt       = CSI + Ps + 'Z'       # CSI Ps Z        | Cursor Backward Tabulation Ps tab stops (default = 1) (CBT)
+sd_ecma48 = CSI + Ps + '^'       # CSI Ps ^        | Scroll down Ps lines (default = 1) (SD), ECMA-48. This was a publication error in the original ECMA-48 5th edition (1991) corrected in 2003.
+hpa       = CSI + Pm + '`'       # CSI Pm `        | Character Position Absolute  [column] (default = [row,1]) (HPA).
+hpr       = CSI + Pm + 'a'       # CSI Pm a        | Character Position Relative  [columns] (default = [row,col+1]) (HPR).
+rep       = CSI + Ps + 'b'       # CSI Ps b        | Repeat the preceding graphic character Ps times (REP).
+vpa       = CSI + Pm + 'd'       # CSI Pm d        | Line Position Absolute  [row] (default = [1,column]) (VPA).
+vpr       = CSI + Pm + 'e'       # CSI Pm e        | Line Position Relative  [rows] (default = [row+1,column]) (VPR).
+hvp       = CSI + Ps+';'+Ps+'f'  # CSI Ps ; Ps f   | Horizontal and Vertical Position [row;column] (default = [1,1]) (HVP).
 
 
 # CSI Ps g
@@ -1000,9 +996,6 @@ class _rd(metaclass=ParamMeta):
     # initial values.
 
 
-# <MOVED> CSI Ps n
-
-
 # CSI > Ps n
 class _rd(metaclass=ParamMeta):
     """
@@ -1022,9 +1015,6 @@ class _rd(metaclass=ParamMeta):
     # adding a parameter to each function key to denote the modifiers.
 
 
-# <MOVED> CSI ? Ps n
-
-
 # CSI > Ps p
 class _pms(metaclass=ParamMeta):
     """
@@ -1040,7 +1030,7 @@ class _pms(metaclass=ParamMeta):
     # If no parameter is given, xterm uses the default, which is 1 .
 
 
-decstr = CSI + '!p'     # CSI ! p   Soft terminal reset (DECSTR), VT220 and up.
+decstr = CSI + '!p'     # CSI ! p   | Soft terminal reset (DECSTR), VT220 and up.
 
 
 # CSI Ps ; Ps " p
@@ -1069,10 +1059,8 @@ class decscl(metaclass=ParamMeta):
     # S8C1T, but DECSCL is preferred.
 
 
-# <MOVED> CSI Ps $ p
-# <MOVED> CSI ? Ps $ p
-xtpushsgr_a_alias = CSI + '#p'                  # CSI # p
-xtpushsgr_alias   = CSI + Ps + ';' + Ps + '#p'  # CSI Ps ; Ps # p   Push video attributes onto stack (XTPUSHSGR), xterm.  This is an alias for CSI # { , used to work around language limitations of C#.
+xtpushsgr_a_alias = CSI + '#p'                  # CSI # p           |
+xtpushsgr_alias   = CSI + Ps + ';' + Ps + '#p'  # CSI Ps ; Ps # p   | Push video attributes onto stack (XTPUSHSGR), xterm.  This is an alias for CSI # { , used to work around language limitations of C#.
 
 
 # CSI Ps q
@@ -1110,13 +1098,13 @@ class decsca(metaclass=ParamMeta):
     CAN_ERASE         = __seq(2)  # Ps = 2  -> DECSED and DECSEL can erase.
 
 
-xtpopsgr_alias = CSI + '#q'                 # CSI # q           Pop video attributes from stack (XTPOPSGR), xterm.  This is an alias for CSI # } , used to work around language limitations of C#.
-decstbm        = CSI + Ps + ';' + Ps + 'r'  # CSI Ps ; Ps r     Set Scrolling Region [top;bottom] (default = full size of window) (DECSTBM), VT100.
-_rdpmv         = CSI + '?' + Ps + 'r'       # CSI ? Pm r        Restore DEC Private Mode Values.  The value of Ps previously saved is restored.  Ps values are the same as for DECSET.
-deccara        = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps[0, 1, 4, 5, 7] + '$r'    # CSI Pt ; Pl ; Pb ; Pr ; Ps $ r    Change Attributes in Rectangular Area (DECCARA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle. Ps denotes the SGR attributes to change: 0, 1, 4, 5, 7.
-scosc          = CSI + 's'                  # CSI s            Save cursor, available only when DECLRMM is disabled (SCOSC, also ANSI.SYS).
-decslrm        = CSI + Ps + ';' + Ps + 's'  # CSI Pl ; Pr s    Set left and right margins (DECSLRM), VT420 and up.  This is available only when DECLRMM is enabled.
-_sdpmv         = CSI + '?' + Ps + 's'       # CSI ? Pm s       Save DEC Private Mode Values.  Ps values are the same as for DECSET.
+xtpopsgr_alias = CSI + '#q'                                                # CSI # q                          | Pop video attributes from stack (XTPOPSGR), xterm.  This is an alias for CSI # } , used to work around language limitations of C#.
+decstbm        = CSI + Ps + ';' + Ps + 'r'                                 # CSI Ps ; Ps r                    | Set Scrolling Region [top;bottom] (default = full size of window) (DECSTBM), VT100.
+_rdpmv         = CSI + '?' + Ps + 'r'                                      # CSI ? Pm r                       | Restore DEC Private Mode Values.  The value of Ps previously saved is restored.  Ps values are the same as for DECSET.
+deccara        = CSI + Ps+';'+Ps+';'+Ps+';'+Ps+';'+Ps[0, 1, 4, 5, 7]+'$r'  # CSI Pt ; Pl ; Pb ; Pr ; Ps $ r   | Change Attributes in Rectangular Area (DECCARA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle. Ps denotes the SGR attributes to change: 0, 1, 4, 5, 7.
+scosc          = CSI + 's'                                                 # CSI s                            | Save cursor, available only when DECLRMM is disabled (SCOSC, also ANSI.SYS).
+decslrm        = CSI + Ps + ';' + Ps + 's'                                 # CSI Pl ; Pr s                    | Set left and right margins (DECSLRM), VT420 and up.  This is available only when DECLRMM is enabled.
+_sdpmv         = CSI + '?' + Ps + 's'                                      # CSI ? Pm s                       | Save DEC Private Mode Values.  Ps values are the same as for DECSET.
 
 
 # CSI Ps ; Ps ; Ps t
@@ -1204,8 +1192,8 @@ class decswbv(metaclass=ParamMeta):
     V8_HIGH = __seq(8)  # Ps = 5 , 6 , 7 , or 8  -> high.
 
 
-decrara = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps[1,4,5,7] + '$t'  # CSI Pt ; Pl ; Pb ; Pr ; Ps $ t    Reverse Attributes in Rectangular Area (DECRARA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle. Ps denotes the attributes to reverse, i.e.,  1, 4, 5, 7.
-scorc = CSI + 'u'   # CSI u     Restore cursor (SCORC, also ANSI.SYS).
+decrara = CSI +Ps+';'+Ps+';'+Ps+';'+Ps+';'+Ps[1, 4, 5, 7]+'$t'  # CSI Pt ; Pl ; Pb ; Pr ; Ps $ t   | Reverse Attributes in Rectangular Area (DECRARA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle. Ps denotes the attributes to reverse, i.e.,  1, 4, 5, 7.
+scorc   = CSI + 'u'                                             # CSI u                            | Restore cursor (SCORC, also ANSI.SYS).
 
 
 # CSI Ps SP u
@@ -1224,9 +1212,7 @@ class decsmbv(metaclass=ParamMeta):
 
 
 deccra = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$v'   # CSI Pt ; Pl ; Pb ; Pr ; Pp ; Pt ; Pl ; Pp $ v     Copy Rectangular Area (DECCRA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle. Pp denotes the source page. Pt ; Pl denotes the target location. Pp denotes the target page.
-# <MOVED> CSI Ps $ w
 decefr = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + "'w"   # CSI Pt ; Pl ; Pb ; Pr ' w     Enable Filter Rectangle (DECEFR), VT420 and up. Parameters are [top;left;bottom;right]. Defines the coordinates of a filter rectangle and activates it.  Anytime the locator is detected outside of the filter rectangle, an outside rectangle event is generated and the rectangle is disabled.  Filter rectangles are always treated as "one-shot" events.  Any parameters that are omitted default to the current locator position.  If all parameters are omitted, any locator motion will be reported.  DECELR always cancels any prevous rectangle definition.
-# <MOVED> CSI Ps x
 
 
 # CSI Ps * x
@@ -1238,7 +1224,7 @@ class decsace(metaclass=ParamMeta):
     EXACT_RECT     = __seq(2)  # Ps = 2  -> rectangle (exact).
 
 
-decfra = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$x'    # CSI Pc ; Pt ; Pl ; Pb ; Pr $ x    Fill Rectangular Area (DECFRA), VT420 and up. Pc is the character to use. Pt ; Pl ; Pb ; Pr denotes the rectangle.
+decfra = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$x'    # CSI Pc ; Pt ; Pl ; Pb ; Pr $ x   | Fill Rectangular Area (DECFRA), VT420 and up. Pc is the character to use. Pt ; Pl ; Pb ; Pr denotes the rectangle.
 
 
 # CSI Ps # y
@@ -1253,11 +1239,8 @@ class xtchecksum(metaclass=ParamMeta):
     NO_7_BIT_MASK       = __seq(5)  # 5  -> do not mask cell value to 7 bits.
 
 
-# <MOVED> CSI Pi ; Pg ; Pt ; Pl ; Pb ; Pr * y
-# <MOVED> CSI Ps ; Pu ' z
-decera = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$z'   # CSI Pt ; Pl ; Pb ; Pr $ z     Erase Rectangular Area (DECERA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle.
-# <MOVED> CSI Pm ' {
-xtpushsgr = CSI + '#{'  # CSI # {
+decera = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '$z'   # CSI Pt ; Pl ; Pb ; Pr $ z   | Erase Rectangular Area (DECERA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle.
+xtpushsgr = CSI + '#{'                                      # CSI # {                     |
 
 
 # CSI Ps ; Ps # {
@@ -1283,8 +1266,7 @@ class xtpushsgr_xx(metaclass=ParamMeta):
     # saved.  The stack is limited to 10 levels.
 
 
-decsera = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '${'  # CSI Pt ; Pl ; Pb ; Pr $ {     Selective Erase Rectangular Area (DECSERA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle.
-# <MOVED> # CSI Pt ; Pl ; Pb ; Pr # |
+decsera = CSI + Ps + ';' + Ps + ';' + Ps + ';' + Ps + '${'  # CSI Pt ; Pl ; Pb ; Pr $ {   | Selective Erase Rectangular Area (DECSERA), VT400 and up. Pt ; Pl ; Pb ; Pr denotes the rectangle.
 
 
 # CSI Ps $ |
@@ -1296,11 +1278,10 @@ class decscpp(metaclass=ParamMeta):
     C132 = __seq(132)  # Ps = 1 3 2  -> 132 columns.
 
 
-# <MOVED> CSI Ps ' |
-decsnls  = CSI + Ps + '*|'   # CSI Ps * |      Select number of lines per screen (DECSNLS), VT420 and up.
-xtpopsgr = CSI + '#}'        # CSI # }         Pop video attributes from stack (XTPOPSGR), xterm.  Popping restores the video-attributes which were saved using XTPUSHSGR to their previous state.
-decic    = CSI + Pm + "'}"   # CSI Pm ' }      Insert Ps Column(s) (default = 1) (DECIC), VT420 and up.
-decdc    = CSI + Pm + "'~"   # CSI Pm ' ~      Delete Ps Column(s) (default = 1) (DECDC), VT420 and up.
+decsnls  = CSI + Ps + '*|'   # CSI Ps * |   | Select number of lines per screen (DECSNLS), VT420 and up.
+xtpopsgr = CSI + '#}'        # CSI # }      | Pop video attributes from stack (XTPOPSGR), xterm.  Popping restores the video-attributes which were saved using XTPUSHSGR to their previous state.
+decic    = CSI + Pm + "'}"   # CSI Pm ' }   | Insert Ps Column(s) (default = 1) (DECIC), VT420 and up.
+decdc    = CSI + Pm + "'~"   # CSI Pm ' ~   | Delete Ps Column(s) (default = 1) (DECDC), VT420 and up.
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 # - - - - - - - - - - - - - - - - -REQUEST- - - - - - - - - - - - - - - - - #
