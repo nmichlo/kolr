@@ -47,23 +47,25 @@ ESC = '\033'
 
 # # C1 (8-Bit) Control Characters
 # # https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h2-C1-_8-Bit_-Control-Characters
-# IND   = ESC + 'D'  #  \x84  #  IND    # Index                        #
-# NEL   = ESC + 'E'  #  \x85  #  NEL    # Next Line                    #
-# HTS   = ESC + 'H'  #  \x88  #  HTS    # Tab Set                      #
-# RI    = ESC + 'M'  #  \x8d  #  RI     # Reverse Index                #
-# SS2   = ESC + 'N'  #  \x8e  #  SS2    # Single Shift Two             #  Selects a single character from one of the alternative character sets. In xterm, SS2 selects the G2 character set, and SS3 selects the G3 character set.
-# SS3   = ESC + 'O'  #  \x8f  #  SS3    # Single Shift Three           #  Selects a single character from one of the alternative character sets. In xterm, SS2 selects the G2 character set, and SS3 selects the G3 character set.
-# DCS   = ESC + 'P'  #  \x90  #  DCS    # Device Control String        #  Terminated by ST. Xterm's uses of this sequence include defining User-Defined Keys, and requesting or setting Termcap/Terminfo data.
-# SPA   = ESC + 'V'  #  \x96  #  SPA    # Start of Guarded Area        #
-# EPA   = ESC + 'W'  #  \x97  #  EPA    # End of Guarded Area          #
-# SOS   = ESC + 'X'  #  \x98  #  SOS    # Start of String              #  Takes an argument of a string of text, terminated by ST. The uses for these string control sequences are defined by the application:8.3.2,8.3.128 or privacy discipline.:8.3.94  These functions are not implemented and the arguments are ignored by xterm.
-# DECID = ESC + 'Z'  #  \x9a  #  DECID  # Return Terminal ID           #  Obsolete form of CSI c (DA).
-# CSI   = ESC + '['  #  \x9b  #  CSI    # Control Sequence Introducer  #  Most of the useful sequences, see next section.
-# ST    = ESC + '\\' #  \x9c  #  ST     # String Terminator            #  Terminates strings in other controls.:8.3.143
-# OSC   = ESC + ']'  #  \x9d  #  OSC    # Operating System Command     #  Starts a control string for the operating system to use, terminated by ST.:8.3.89 In xterm, they may also be terminated by BEL. In xterm, the curses_screen title can be set by OSC 0;this is the curses_screen title BEL.
-# PM    = ESC + '^'  #  \x9e  #  PM     # Privacy Message              #  Takes an argument of a string of text, terminated by ST. The uses for these string control sequences are defined by the application:8.3.2,8.3.128 or privacy discipline.:8.3.94  These functions are not implemented and the arguments are ignored by xterm.
-# APC   = ESC + '_'  #  \x9f  #  APC    # Application Program Command  #  Takes an argument of a string of text, terminated by ST. The uses for these string control sequences are defined by the application:8.3.2,8.3.128 or privacy discipline.:8.3.94  These functions are not implemented and the arguments are ignored by xterm.
-# RIS   = ESC + 'c'  #  None  #  RIS    # Reset to Initial State       #  Resets the device to its original state.  This may include (if applicable): reset graphic rendition, clear tabulation stops, reset to default font, and more.
+# IND   = ESC + 'D'   # IND   | Index                        | \x84 |
+# NEL   = ESC + 'E'   # NEL   | Next Line                    | \x85 |
+# HTS   = ESC + 'H'   # HTS   | Tab Set                      | \x88 |
+# RI    = ESC + 'M'   # RI    | Reverse Index                | \x8d |
+# SS2   = ESC + 'N'   # SS2   | Single Shift Two             | \x8e |  Selects a single character from one of the alternative character sets. In xterm, SS2 selects the G2 character set, and SS3 selects the G3 character set.
+# SS3   = ESC + 'O'   # SS3   | Single Shift Three           | \x8f |  Selects a single character from one of the alternative character sets. In xterm, SS2 selects the G2 character set, and SS3 selects the G3 character set.
+# DCS   = ESC + 'P'   # DCS   | Device Control String        | \x90 |  Terminated by ST. Xterm's uses of this sequence include defining User-Defined Keys, and requesting or setting Termcap/Terminfo data.
+# SPA   = ESC + 'V'   # SPA   | Start of Guarded Area        | \x96 |
+# EPA   = ESC + 'W'   # EPA   | End of Guarded Area          | \x97 |
+# SOS   = ESC + 'X'   # SOS   | Start of String              | \x98 |  Takes an argument of a string of text, terminated by ST. The uses for these string control sequences are defined by the application:8.3.2,8.3.128 or privacy discipline.:8.3.94  These functions are not implemented and the arguments are ignored by xterm.
+# DECID = ESC + 'Z'   # DECID | Return Terminal ID           | \x9a |  Obsolete form of CSI c (DA).
+# CSI   = ESC + '['   # CSI   | Control Sequence Introducer  | \x9b |  Most of the useful sequences, see next section.
+# ST    = ESC + '\\'  # ST    | String Terminator            | \x9c |  Terminates strings in other controls.:8.3.143
+# OSC   = ESC + ']'   # OSC   | Operating System Command     | \x9d |  Starts a control string for the operating system to use, terminated by ST.:8.3.89 In xterm, they may also be terminated by BEL. In xterm, the curses_screen title can be set by OSC 0;this is the curses_screen title BEL.
+# PM    = ESC + '^'   # PM    | Privacy Message              | \x9e |  Takes an argument of a string of text, terminated by ST. The uses for these string control sequences are defined by the application:8.3.2,8.3.128 or privacy discipline.:8.3.94  These functions are not implemented and the arguments are ignored by xterm.
+# APC   = ESC + '_'   # APC   | Application Program Command  | \x9f |  Takes an argument of a string of text, terminated by ST. The uses for these string control sequences are defined by the application:8.3.2,8.3.128 or privacy discipline.:8.3.94  These functions are not implemented and the arguments are ignored by xterm.
+
+# # Controls beginning with ESC
+# RIS   = ESC + 'c'   # RIS   | Reset to Initial State       | None |  Resets the device to its original state.  This may include (if applicable): reset graphic rendition, clear tabulation stops, reset to default font, and more.
 
 
 # ========================================================================= #
