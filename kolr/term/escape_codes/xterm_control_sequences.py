@@ -310,16 +310,16 @@ APC   = ESC + '_'   # ESC _   | Application Program Command (APC  is 0x9f).
 # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 BEL = 'ctrl-g'  # BEL   | Bell (Ctrl-G).
-BS = 'ctrl-h'   # BS    | Backspace (Ctrl-H).
-CR = 'ctrl-m'   # CR    | Carriage Return (Ctrl-M).
+BS  = 'ctrl-h'  # BS    | Backspace (Ctrl-H).
+CR  = 'ctrl-m'  # CR    | Carriage Return (Ctrl-M).
 ENQ = 'ctrl-e'  # ENQ   | Return Terminal Status (Ctrl-E).  Default response is an empty string, but may be overridden by a resource answerbackString.
-FF = 'ctrl-l'   # FF    | Form Feed or New Page (NP).  (FF  is Ctrl-L).  FF  is treated the same as LF .
-LF = 'ctrl-j'   # LF    | Line Feed or New Line (NL).  (LF  is Ctrl-J).
-SI = 'ctrl-o'   # SI    | Switch to Standard Character Set (Ctrl-O is Shift In or LS0). This invokes the G0 character set (the default) as GL. VT200 and up implement LS0.
-SO = 'ctrl-n'   # SO    | Switch to Alternate Character Set (Ctrl-N is Shift Out or LS1).  This invokes the G1 character set as GL. VT200 and up implement LS1.
-SP = ' '        # SP    | Space.
+FF  = 'ctrl-l'  # FF    | Form Feed or New Page (NP).  (FF  is Ctrl-L).  FF  is treated the same as LF .
+LF  = 'ctrl-j'  # LF    | Line Feed or New Line (NL).  (LF  is Ctrl-J).
+SI  = 'ctrl-o'  # SI    | Switch to Standard Character Set (Ctrl-O is Shift In or LS0). This invokes the G0 character set (the default) as GL. VT200 and up implement LS0.
+SO  = 'ctrl-n'  # SO    | Switch to Alternate Character Set (Ctrl-N is Shift Out or LS1).  This invokes the G1 character set as GL. VT200 and up implement LS1.
+SP  = ' '       # SP    | Space.
 TAB = 'ctrl-i'  # TAB   | Horizontal Tab (HT) (Ctrl-I).
-VT = 'ctrl-k'   # VT    | Vertical Tab (Ctrl-K).  This is treated the same as LF.
+VT  = 'ctrl-k'  # VT    | Vertical Tab (Ctrl-K).  This is treated the same as LF.
 
 # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Controls beginning with ESC
@@ -1568,7 +1568,6 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 
 # OSC Ps ; Pt BEL
-#
 # OSC Ps ; Pt ST
 #           Set Text Parameters.  For colors and font, if Pt is a "?", the
 #           control sequence elicits a response which consists of the con-
@@ -1732,6 +1731,8 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 #             Ps = l  ; c -> Set window title.  Sun shelltool, CDE dtterm.
 #
 #             Ps = L  ; c -> Set icon label.  Sun shelltool, CDE dtterm.
+
+_osctp = OSC + Ps + ';' + Pt + ST
 
 # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
 # Privacy Message
