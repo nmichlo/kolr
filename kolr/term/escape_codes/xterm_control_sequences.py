@@ -2424,9 +2424,9 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 #
 # URXVT (1015)
 #           The normal mouse response is altered to use
-#
+
 #           o   CSI followed by semicolon-separated
-#
+
 #           o   encoded button value,
 #
 #           o   the Px and Py ordinates and final character M .
@@ -2456,16 +2456,13 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 # CSI ? Pm h
 #           xterm has these additional private Set Mode values:
 #             Ps = 8 0  -> Sixel scrolling.
-#             Ps = 1 0 7 0  -> use private color registers for each
-#           graphic.
-#             Ps = 8 4 5 2  -> Sixel scrolling leaves cursor to right of
-#           graphic.
+#             Ps = 1 0 7 0  -> use private color registers for each graphic.
+#             Ps = 8 4 5 2  -> Sixel scrolling leaves cursor to right of graphic.
 
 # TODO: extend previous
 
 # DCS Pa ; Pb ; Ph q  Ps..Ps ST
 #           See:
-#
 #                http://vt100.net/docs/vt3xx-gp/chapter14.html
 #
 #           The sixel data device control string has three positional
@@ -2498,7 +2495,6 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 
 # DCS Pm p Pr..Pr ST
 #           See:
-#
 #                http://vt100.net/docs/vt3xx-gp/chapter1.html
 #
 #           The ReGIS data device control string has one positional param-
@@ -2527,48 +2523,28 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 # Exiting 4010/4014 Mode") that exiting back to ANSI mode is done by
 # resetting private mode 3 8  (DECTEK) rather than ESC ETX .  A real Tek-
 # tronix 4014 would not respond to either.
-#
+
 # BEL       Bell (Ctrl-G).
-#
 # BS        Backspace (Ctrl-H).
-#
 # TAB       Horizontal Tab (Ctrl-I).
-#
 # LF        Line Feed or New Line (Ctrl-J).
-#
 # VT        Cursor up (Ctrl-K).
-#
 # FF        Form Feed or New Page (Ctrl-L).
-#
 # CR        Carriage Return (Ctrl-M).
-#
 # ESC ETX   Switch to VT100 Mode (ESC  Ctrl-C).
-#
 # ESC ENQ   Return Terminal Status (ESC  Ctrl-E).
-#
 # ESC FF    PAGE (Clear Screen) (ESC  Ctrl-L).
-#
 # ESC SO    Begin 4015 APL mode (ESC  Ctrl-N).  This is ignored by xterm.
-#
 # ESC SI    End 4015 APL mode (ESC  Ctrl-O).  This is ignored by xterm.
-#
-# ESC ETB   COPY (Save Tektronix Codes to file COPYyyyy-mm-dd.hh:mm:ss).
-#             ETB  (end transmission block) is the same as Ctrl-W.
-#
+# ESC ETB   COPY (Save Tektronix Codes to file COPYyyyy-mm-dd.hh:mm:ss). ETB  (end transmission block) is the same as Ctrl-W.
 # ESC CAN   Bypass Condition (ESC  Ctrl-X).
-#
 # ESC SUB   GIN mode (ESC  Ctrl-Z).
-#
 # ESC FS    Special Point Plot Mode (ESC  Ctrl-\).
-#
 # ESC 8     Select Large Character Set.
-#
 # ESC 9     Select #2 Character Set.
-#
 # ESC :     Select #3 Character Set.
-#
 # ESC ;     Select Small Character Set.
-#
+
 # OSC Ps ; Pt BEL
 #           Set Text Parameters of VT window.
 #             Ps = 0  -> Change Icon Name and Window Title to Pt.
@@ -2576,43 +2552,25 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 #             Ps = 2  -> Change Window Title to Pt.
 #             Ps = 4 6  -> Change Log File to Pt.  This is normally dis-
 #           abled by a compile-time option.
-#
+
 # ESC `     Normal Z Axis and Normal (solid) Vectors.
-#
 # ESC a     Normal Z Axis and Dotted Line Vectors.
-#
 # ESC b     Normal Z Axis and Dot-Dashed Vectors.
-#
 # ESC c     Normal Z Axis and Short-Dashed Vectors.
-#
 # ESC d     Normal Z Axis and Long-Dashed Vectors.
-#
 # ESC h     Defocused Z Axis and Normal (solid) Vectors.
-#
 # ESC i     Defocused Z Axis and Dotted Line Vectors.
-#
 # ESC j     Defocused Z Axis and Dot-Dashed Vectors.
-#
 # ESC k     Defocused Z Axis and Short-Dashed Vectors.
-#
 # ESC l     Defocused Z Axis and Long-Dashed Vectors.
-#
 # ESC p     Write-Thru Mode and Normal (solid) Vectors.
-#
 # ESC q     Write-Thru Mode and Dotted Line Vectors.
-#
 # ESC r     Write-Thru Mode and Dot-Dashed Vectors.
-#
 # ESC s     Write-Thru Mode and Short-Dashed Vectors.
-#
 # ESC t     Write-Thru Mode and Long-Dashed Vectors.
-#
 # FS        Point Plot Mode (Ctrl-\).
-#
 # GS        Graph Mode (Ctrl-]).
-#
 # RS        Incremental Plot Mode (Ctrl-^ ).
-#
 # US        Alpha Mode (Ctrl-_).
 
 # ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~ #
@@ -2624,34 +2582,22 @@ request__decrqlp = CSI + Ps[0, 1] + "'|"
 # For example, !  is 1.  The screen coordinate system is 0-based.
 #
 # ESC <     Exit VT52 mode (Enter VT100 mode).
-#
 # ESC =     Enter alternate keypad mode.
-#
 # ESC >     Exit alternate keypad mode.
-#
 # ESC A     Cursor up.
-#
 # ESC B     Cursor down.
-#
 # ESC C     Cursor right.
-#
 # ESC D     Cursor left.
-#
 # ESC F     Enter graphics mode.
-#
 # ESC G     Exit graphics mode.
-#
 # ESC H     Move the cursor to the home position.
-#
 # ESC I     Reverse line feed.
-#
 # ESC J     Erase from the cursor to the end of the screen.
-#
 # ESC K     Erase from the cursor to the end of the line.
-#
+
 # ESC Y Ps Ps
 #           Move the cursor to given row and column.
-#
+
 # ESC Z     Identify.
 #             -> ESC  /  Z  ("I am a VT52.").
 
