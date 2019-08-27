@@ -592,10 +592,14 @@ class _tmfr(metaclass=ParamMeta):
     for the title modes into xterm. (See discussion of Title Modes).
     """
     __seq = CSI + '>' + Ps + ';' + Ps + 'T'
-    no_set_labels_hex    = lambda x: _tmfr.__seq(0, x)  # Ps = 0  -> Do not set window/icon labels using hexadecimal.
-    no_query_labels_hex  = lambda x: _tmfr.__seq(1, x)  # Ps = 1  -> Do not query window/icon labels using hexadecimal.
-    no_set_labels_utf8   = lambda x: _tmfr.__seq(2, x)  # Ps = 2  -> Do not set window/icon labels using UTF-8.
-    no_query_labels_utf8 = lambda x: _tmfr.__seq(3, x)  # Ps = 3  -> Do not query window/icon labels using UTF-8.
+    @staticmethod
+    def no_set_labels_hex(x):    return _tmfr.__seq(0, x)  # Ps = 0  -> Do not set window/icon labels using hexadecimal.
+    @staticmethod
+    def no_query_labels_hex(x):  return _tmfr.__seq(1, x)  # Ps = 1  -> Do not query window/icon labels using hexadecimal.
+    @staticmethod
+    def no_set_labels_utf8(x):   return _tmfr.__seq(2, x)  # Ps = 2  -> Do not set window/icon labels using UTF-8.
+    @staticmethod
+    def no_query_labels_utf8(x): return _tmfr.__seq(3, x)  # Ps = 3  -> Do not query window/icon labels using UTF-8.
 
 
 ech       = CSI + Ps + 'X'  # CSI Ps X      Erase Ps Character(s) (default = 1) (ECH).
@@ -800,9 +804,6 @@ class decrst(metaclass=ParamMeta):
     BRACKET_PASTE                   = __seq(2004)  # Ps = 2 0 0 4  -> Reset bracketed paste mode, xterm.
 
 
-from kolr.term.escape_codes.sgr import _sel as _private__sel_
-
-
 # CSI Pm m
 class sgr(metaclass=ParamMeta):
     """Character Attributes (SGR)."""
@@ -851,7 +852,6 @@ class sgr(metaclass=ParamMeta):
     FG_CYAN                     = __seq(36)  # Ps = 3 6  -> Set foreground color to Cyan.
     FG_WHITE                    = __seq(37)  # Ps = 3 7  -> Set foreground color to White.
     # ↑↑↑↑↑ 30-37 Set Foreground Color ↑↑↑↑
-    fg_select                   = _private__sel_(38)
     RESET_FG                    = __seq(39)  # Ps = 3 9  -> Set foreground color to default, ECMA-48 3rd.
     # ↓↓↓↓↓ 40-47 Set Background Color ↓↓↓↓
     BG_BLACK                    = __seq(40)  # Ps = 4 0  -> Set background color to Black.
@@ -863,7 +863,6 @@ class sgr(metaclass=ParamMeta):
     BG_CYAN                     = __seq(46)  # Ps = 4 6  -> Set background color to Cyan.
     BG_WHITE                    = __seq(47)  # Ps = 4 7  -> Set background color to White.
     # ↑↑↑↑↑ 40-47 Set Background Color ↑↑↑↑
-    bg_select                   = _private__sel_(48)
     RESET_BG                    = __seq(49)  # Ps = 4 9  -> Set background color to default, ECMA-48 3rd.
     # 50 <UNUSED>
     # FRAME                     = __seq(51)
@@ -952,6 +951,26 @@ class sgr(metaclass=ParamMeta):
     #   Pm = 3 8 ; 2 ; Pr ; Pg ; Pb -> Set foreground color to the closest match in xterm's palette for the given RGB Pr/Pg/Pb.
     #   Pm = 4 8 ; 2 ; Pr ; Pg ; Pb -> Set background color to the closest match in xterm's palette for the given RGB Pr/Pg/Pb.
 
+    __seq_rgb = CSI + Ps[38, 48] + ';2;' + Ps + ';' + Ps + ';' + Ps + 'm'
+    __seq_256 = CSI + Ps[38, 48] + ';5;' + Ps + 'm'
+
+    @staticmethod
+    def fg_select_rgb(r, g, b):
+        assert all(0 <= v < 256 for v in [r, g, b])
+        return sgr.__seq_rgb(38, r, g, b)
+    @staticmethod
+    def fg_select_256(n):
+        assert 0 <= n < 256
+        return sgr.__seq_256(38, n)
+    @staticmethod
+    def bg_select_rgb(r, g, b):
+        assert all(0 <= v < 256 for v in [r, g, b])
+        return sgr.__seq_rgb(48, r, g, b)
+    @staticmethod
+    def bg_select_256(n):
+        assert 0 <= n < 256
+        return sgr.__seq_256(48, n)
+
     # If xterm is compiled with direct-color support, and the
     # resource directColor is true, then rather than choosing the
     # closest match, xterm asks the X server to directly render a given color.
@@ -969,10 +988,14 @@ class _rd(metaclass=ParamMeta):
     # second parameter is the value to assign to the resource.
     # If the second parameter is omitted, the resource is reset to
     # its initial value.
-    keyboard      = lambda val: _rd.__seq(0, val)  # Ps = 0  -> modifyKeyboard.
-    cursor_keys   = lambda val: _rd.__seq(1, val)  # Ps = 1  -> modifyCursorKeys.
-    function_keys = lambda val: _rd.__seq(2, val)  # Ps = 2  -> modifyFunctionKeys.
-    other_keys    = lambda val: _rd.__seq(4, val)  # Ps = 4  -> modifyOtherKeys.
+    @staticmethod
+    def keyboard(val):      return _rd.__seq(0, val)  # Ps = 0  -> modifyKeyboard.
+    @staticmethod
+    def cursor_keys(val):   return _rd.__seq(1, val)  # Ps = 1  -> modifyCursorKeys.
+    @staticmethod
+    def function_keys(val): return _rd.__seq(2, val)  # Ps = 2  -> modifyFunctionKeys.
+    @staticmethod
+    def other_keys(val):    return _rd.__seq(4, val)  # Ps = 4  -> modifyOtherKeys.
     # If no parameters are given, all resources are reset to their
     # initial values.
 
@@ -1026,11 +1049,16 @@ class decscl(metaclass=ParamMeta):
     __seq = CSI + Ps[61, 62, 63, 64, 65] + ';' + Ps[0, 1, 2] + '"p'
     # The first parameter selects the conformance level.
     # Valid values are:
-    level_1 = lambda t: decscl.__seq(61, t)  # Ps = 6 1  -> level 1, e.g., VT100.
-    level_2 = lambda t: decscl.__seq(62, t)  # Ps = 6 2  -> level 2, e.g., VT200.
-    level_3 = lambda t: decscl.__seq(63, t)  # Ps = 6 3  -> level 3, e.g., VT300.
-    level_4 = lambda t: decscl.__seq(64, t)  # Ps = 6 4  -> level 4, e.g., VT400.
-    level_5 = lambda t: decscl.__seq(65, t)  # Ps = 6 5  -> level 5, e.g., VT500.
+    @staticmethod
+    def level_1(t): return decscl.__seq(61, t)  # Ps = 6 1  -> level 1, e.g., VT100.
+    @staticmethod
+    def level_2(t): return decscl.__seq(62, t)  # Ps = 6 2  -> level 2, e.g., VT200.
+    @staticmethod
+    def level_3(t): return decscl.__seq(63, t)  # Ps = 6 3  -> level 3, e.g., VT300.
+    @staticmethod
+    def level_4(t): return decscl.__seq(64, t)  # Ps = 6 4  -> level 4, e.g., VT400.
+    @staticmethod
+    def level_5(t): return decscl.__seq(65, t)  # Ps = 6 5  -> level 5, e.g., VT500.
     # The second parameter selects the C1 control transmission mode.
     # This is an optional parameter, ignored in conformance level 1.
     # Valid values are:
@@ -1104,42 +1132,45 @@ class _wm(metaclass=ParamMeta):
     # fact equate those to the maximize operation.
 
     # Valid values for the first (and any additional parameters) are:
-    DEICONIFY                  = __seq(1,  None, None)            # Ps = 1  -> De-iconify window.
-    ICONIFY                    = __seq(2,  None, None)            # Ps = 2  -> Iconify window.
-    move_window                = lambda x, y: _wm.__seq(3, x, y)  # Ps = 3 ;  x ;  y -> Move window to [x, y].
-    resize_window              = lambda w, h: _wm.__seq(4, h, w)  # Ps = 4 ;  height ;  width -> Resize the xterm window to given height and width in pixels.  Omitted parameters reuse the current height or width.  Zero parameters use the display's height or width.
-    TO_FRONT                   = __seq(5,  None, None)            # Ps = 5  -> Raise the xterm window to the front of the stacking order.
-    TO_BACK                    = __seq(6,  None, None)            # Ps = 6  -> Lower the xterm window to the bottom of the stacking order.
-    REFRESH                    = __seq(7,  None, None)            # Ps = 7  -> Refresh the xterm window.
-    resize_text_area           = lambda w, h: _wm.__seq(8, h, w)  # Ps = 8 ;  height ;  width -> Resize the text area to given height and width in characters.  Omitted parameters reuse the current height or width.  Zero parameters use the display's height or width.
-    MAXIMIZED_RESTORE          = __seq(9,     0, None)            # Ps = 9 ;  0  -> Restore maximized window.
-    MAXIMIZE                   = __seq(9,     1, None)            # Ps = 9 ;  1  -> Maximize window (i.e., resize to screen size).
-    MAXIMIZE_V                 = __seq(9,     2, None)            # Ps = 9 ;  2  -> Maximize window vertically.
-    MAXIMIZE_H                 = __seq(9,     3, None)            # Ps = 9 ;  3  -> Maximize window horizontally.
-    FULL_SCREEN_UNDO           = __seq(10,    0, None)            # Ps = 1 0 ;  0  -> Undo full-screen mode.
-    FULL_SCREEN                = __seq(10,    1, None)            # Ps = 1 0 ;  1  -> Change to full-screen.
-    FULL_SCREEN_TOGGLE         = __seq(10,    2, None)            # Ps = 1 0 ;  2  -> Toggle full-screen.
-    REPORT_ICONIFIED           = __seq(11, None, None)            # Ps = 1 1  -> Report xterm window state. If the xterm window is non-iconified, it returns CSI 1 t . If the xterm window is iconified, it returns CSI 2 t .
-    REPORT_POS                 = __seq(13, None, None)            # Ps = 1 3  -> Report xterm window position. Note: X Toolkit positions can be negative, but the reported values are unsigned, in the range 0-65535.  Negative values correspond to 32768-65535. Result is CSI 3 ; x ; y t
-    REPORT_POS_TEXT_AREA       = __seq(13,    2, None)            # Ps = 1 3 ;  2  -> Report xterm text-area position. Result is CSI 3 ; x ; y t
-    REPORT_SIZE_TEXT_AREA      = __seq(14, None, None)            # Ps = 1 4  -> Report xterm text area size in pixels. Result is CSI  4 ;  height ;  width t
-    REPORT_SIZE_WINDOW         = __seq(14,    2, None)            # Ps = 1 4 ;  2  -> Report xterm window size in pixels. Normally xterm's window is larger than its text area, since it includes the frame (or decoration) applied by the window manager, as well as the area used by a scroll-bar. Result is CSI  4 ;  height ;  width t
-    REPORT_SIZE_SCREEN         = __seq(15, None, None)            # Ps = 1 5  -> Report size of the screen in pixels. Result is CSI  5 ;  height ;  width t
-    REPORT_SIZE_CHAR_CELL      = __seq(16, None, None)            # Ps = 1 6  -> Report xterm character cell size in pixels. Result is CSI  6 ;  height ;  width t
-    REPORT_CHAR_SIZE_TEXT_AREA = __seq(18, None, None)            # Ps = 1 8  -> Report the size of the text area in characters. Result is CSI  8 ;  height ;  width t
-    REPORT_CHAR_SIZE_SCREEN    = __seq(19, None, None)            # Ps = 1 9  -> Report the size of the screen in characters. Result is CSI  9 ;  height ;  width t
-    REPORT_ICON_LABEL          = __seq(20, None, None)            # Ps = 2 0  -> Report xterm window's icon label. Result is OSC  L  label ST
-    REPORT_WINDOW_TITLE        = __seq(21, None, None)            # Ps = 2 1  -> Report xterm window's title. Result is OSC  l  label ST
+    DEICONIFY                  = __seq(1,  None, None)     # Ps = 1  -> De-iconify window.
+    ICONIFY                    = __seq(2,  None, None)     # Ps = 2  -> Iconify window.
+    @staticmethod
+    def move_window(x, y):      return _wm.__seq(3, x, y)  # Ps = 3 ;  x ;  y -> Move window to [x, y].
+    @staticmethod
+    def resize_window(w, h):    return _wm.__seq(4, h, w)  # Ps = 4 ;  height ;  width -> Resize the xterm window to given height and width in pixels.  Omitted parameters reuse the current height or width.  Zero parameters use the display's height or width.
+    TO_FRONT                   = __seq(5,  None, None)     # Ps = 5  -> Raise the xterm window to the front of the stacking order.
+    TO_BACK                    = __seq(6,  None, None)     # Ps = 6  -> Lower the xterm window to the bottom of the stacking order.
+    REFRESH                    = __seq(7,  None, None)     # Ps = 7  -> Refresh the xterm window.
+    @staticmethod
+    def resize_text_area(w, h): return _wm.__seq(8, h, w)  # Ps = 8 ;  height ;  width -> Resize the text area to given height and width in characters.  Omitted parameters reuse the current height or width.  Zero parameters use the display's height or width.
+    MAXIMIZED_RESTORE          = __seq(9,     0, None)     # Ps = 9 ;  0  -> Restore maximized window.
+    MAXIMIZE                   = __seq(9,     1, None)     # Ps = 9 ;  1  -> Maximize window (i.e., resize to screen size).
+    MAXIMIZE_V                 = __seq(9,     2, None)     # Ps = 9 ;  2  -> Maximize window vertically.
+    MAXIMIZE_H                 = __seq(9,     3, None)     # Ps = 9 ;  3  -> Maximize window horizontally.
+    FULL_SCREEN_UNDO           = __seq(10,    0, None)     # Ps = 1 0 ;  0  -> Undo full-screen mode.
+    FULL_SCREEN                = __seq(10,    1, None)     # Ps = 1 0 ;  1  -> Change to full-screen.
+    FULL_SCREEN_TOGGLE         = __seq(10,    2, None)     # Ps = 1 0 ;  2  -> Toggle full-screen.
+    REPORT_ICONIFIED           = __seq(11, None, None)     # Ps = 1 1  -> Report xterm window state. If the xterm window is non-iconified, it returns CSI 1 t . If the xterm window is iconified, it returns CSI 2 t .
+    REPORT_POS                 = __seq(13, None, None)     # Ps = 1 3  -> Report xterm window position. Note: X Toolkit positions can be negative, but the reported values are unsigned, in the range 0-65535.  Negative values correspond to 32768-65535. Result is CSI 3 ; x ; y t
+    REPORT_POS_TEXT_AREA       = __seq(13,    2, None)     # Ps = 1 3 ;  2  -> Report xterm text-area position. Result is CSI 3 ; x ; y t
+    REPORT_SIZE_TEXT_AREA      = __seq(14, None, None)     # Ps = 1 4  -> Report xterm text area size in pixels. Result is CSI  4 ;  height ;  width t
+    REPORT_SIZE_WINDOW         = __seq(14,    2, None)     # Ps = 1 4 ;  2  -> Report xterm window size in pixels. Normally xterm's window is larger than its text area, since it includes the frame (or decoration) applied by the window manager, as well as the area used by a scroll-bar. Result is CSI  4 ;  height ;  width t
+    REPORT_SIZE_SCREEN         = __seq(15, None, None)     # Ps = 1 5  -> Report size of the screen in pixels. Result is CSI  5 ;  height ;  width t
+    REPORT_SIZE_CHAR_CELL      = __seq(16, None, None)     # Ps = 1 6  -> Report xterm character cell size in pixels. Result is CSI  6 ;  height ;  width t
+    REPORT_CHAR_SIZE_TEXT_AREA = __seq(18, None, None)     # Ps = 1 8  -> Report the size of the text area in characters. Result is CSI  8 ;  height ;  width t
+    REPORT_CHAR_SIZE_SCREEN    = __seq(19, None, None)     # Ps = 1 9  -> Report the size of the screen in characters. Result is CSI  9 ;  height ;  width t
+    REPORT_ICON_LABEL          = __seq(20, None, None)     # Ps = 2 0  -> Report xterm window's icon label. Result is OSC  L  label ST
+    REPORT_WINDOW_TITLE        = __seq(21, None, None)     # Ps = 2 1  -> Report xterm window's title. Result is OSC  l  label ST
 
-    SAVE_ICON_AND_TITLE        = __seq(22,    0, None)            # Ps = 2 2 ; 0  -> Save xterm icon and window title on stack.
-    SAVE_ICON                  = __seq(22,    1, None)            # Ps = 2 2 ; 1  -> Save xterm icon title on stack.
-    SAVE_TITLE                 = __seq(22,    2, None)            # Ps = 2 2 ; 2  -> Save xterm window title on stack.
-    RESTORE_ICON_AND_TITLE     = __seq(23,    0, None)            # Ps = 2 3 ; 0  -> Restore xterm icon and window title from stack.
-    RESTORE_ICON               = __seq(23,    1, None)            # Ps = 2 3 ; 1  -> Restore xterm icon title from stack.
-    RESTORE_TITLE              = __seq(23,    2, None)            # Ps = 2 3 ; 2  -> Restore xterm window title from stack.
+    SAVE_ICON_AND_TITLE        = __seq(22,    0, None)     # Ps = 2 2 ; 0  -> Save xterm icon and window title on stack.
+    SAVE_ICON                  = __seq(22,    1, None)     # Ps = 2 2 ; 1  -> Save xterm icon title on stack.
+    SAVE_TITLE                 = __seq(22,    2, None)     # Ps = 2 2 ; 2  -> Save xterm window title on stack.
+    RESTORE_ICON_AND_TITLE     = __seq(23,    0, None)     # Ps = 2 3 ; 0  -> Restore xterm icon and window title from stack.
+    RESTORE_ICON               = __seq(23,    1, None)     # Ps = 2 3 ; 1  -> Restore xterm icon title from stack.
+    RESTORE_TITLE              = __seq(23,    2, None)     # Ps = 2 3 ; 2  -> Restore xterm window title from stack.
 
     @staticmethod
-    def resize_to_lines(h):                                       # Ps >= 2 4  -> Resize to Ps lines (DECSLPP), VT340 and VT420. xterm adapts this by resizing its window.
+    def resize_to_lines(h):                                # Ps >= 2 4  -> Resize to Ps lines (DECSLPP), VT340 and VT420. xterm adapts this by resizing its window.
         assert int(h) >= 24
         return _wm.__seq(h, None, None)
 
@@ -1148,10 +1179,14 @@ class _wm(metaclass=ParamMeta):
 class _tmfs(metaclass=ParamMeta):
     """This xterm control sets one or more features of the title modes.  Each parameter enables a single feature."""
     __seq = CSI + '>' + Ps[0, 1, 2, 3] + ';' + Ps + 't'
-    set_label_hex    = lambda x: _tmfs.__seq(0, x)  # Ps = 0  -> Set window/icon labels using hexadecimal.
-    query_label_hex  = lambda x: _tmfs.__seq(1, x)  # Ps = 1  -> Query window/icon labels using hexadecimal.
-    set_label_utf8   = lambda x: _tmfs.__seq(2, x)  # Ps = 2  -> Set window/icon labels using UTF-8.
-    query_label_utf8 = lambda x: _tmfs.__seq(3, x)  # Ps = 3  -> Query window/icon labels using UTF-8.  (See discussion of Title Modes)
+    @staticmethod
+    def set_label_hex(x):    return _tmfs.__seq(0, x)  # Ps = 0  -> Set window/icon labels using hexadecimal.
+    @staticmethod
+    def query_label_hex(x):  return _tmfs.__seq(1, x)  # Ps = 1  -> Query window/icon labels using hexadecimal.
+    @staticmethod
+    def set_label_utf8(x):   return _tmfs.__seq(2, x)  # Ps = 2  -> Set window/icon labels using UTF-8.
+    @staticmethod
+    def query_label_utf8(x): return _tmfs.__seq(3, x)  # Ps = 3  -> Query window/icon labels using UTF-8.  (See discussion of Title Modes)
 
 
 # CSI Ps SP t
@@ -1267,11 +1302,9 @@ xtpopsgr = CSI + '#}'        # CSI # }         Pop video attributes from stack (
 decic    = CSI + Pm + "'}"   # CSI Pm ' }      Insert Ps Column(s) (default = 1) (DECIC), VT420 and up.
 decdc    = CSI + Pm + "'~"   # CSI Pm ' ~      Delete Ps Column(s) (default = 1) (DECDC), VT420 and up.
 
-
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 # - - - - - - - - - - - - - - - - -REQUEST- - - - - - - - - - - - - - - - - #
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
-
 
 # CSI ? Pi ; Pa ; Pv S
 #           If configured to support either Sixel Graphics or ReGIS Graphics, xterm accepts a three-parameter control sequence, where Pi, Pa and Pv are the item, action and value:
@@ -1351,7 +1384,7 @@ _graphics_item_action_value = CSI + '?' + Ps[1, 2, 3] + ';' + Ps[1, 2, 3, 4] + '
 #           dow's size.  The "cursor coupling" controls (DECHCCM, DECPCCM,
 #           DECVCCM) are ignored.
 
-request__pda = CSI + Ps[0,1,2,3,4,6,8,9,15,16,17,18,21,22,28,29] + 'c'
+request__pda = CSI + Ps[0, 1, 2, 3, 4, 6, 8, 9, 15, 16, 17, 18, 21, 22, 28, 29] + 'c'
 
 # CSI = Ps c
 #           Send Device Attributes (Tertiary DA).
@@ -1402,7 +1435,7 @@ request__sda = CSI + '>' + Ps[0,] + 'c'
 #           can change the form of the string sent from the modified F1
 #           key.
 
-request__dsr = CSI + Ps[5,6] + 'n'
+request__dsr = CSI + Ps[5, 6] + 'n'
 
 # CSI ? Ps n
 #           Device Status Report (DSR, DEC-specific).
@@ -1454,7 +1487,7 @@ request__decrqm_p = CSI + '?' + Ps + '$p'
 #             Ps = 1  -> cursor information report (DECCIR). Response is DCS 1 $ u Pt ST . Refer to the VT420 programming manual, which requires six pages to document the data string Pt,
 #             Ps = 2  -> tab stop report (DECTABSR). Response is DCS 2 $ u Pt ST . The data string Pt is a list of the tab-stops, separated by "/" characters.
 
-request__decrqpsr = CSI + Ps[0,1,2] + '$w'
+request__decrqpsr = CSI + Ps[0, 1, 2] + '$w'
 
 # CSI Ps x  Request Terminal Parameters (DECREQTPARM).
 #           if Ps is a "0" (default) or "1", and xterm is emulating VT100,
@@ -1468,7 +1501,7 @@ request__decrqpsr = CSI + Ps[0,1,2] + '$w'
 #             Pn = 1  <- clock multiplier.
 #             Pn = 0  <- STP flags.
 
-request__decreqtparm = CSI + Ps[0,1] + 'x'
+request__decreqtparm = CSI + Ps[0, 1] + 'x'
 
 # CSI Pi ; Pg ; Pt ; Pl ; Pb ; Pr * y
 #           Request Checksum of Rectangular Area (DECRQCRA), VT420 and up.
