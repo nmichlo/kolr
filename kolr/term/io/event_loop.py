@@ -25,6 +25,7 @@
 
 
 from kolr.term.io.input import TermInput
+from kolr.term.io.key_processor import KeyProc
 from kolr.term.io.output import TermOutput
 from kolr.util.events import Emitter
 from kolr.util.loop import RenderLoop
@@ -86,16 +87,7 @@ class TermEventLoop(object):
         self.flush = self._term_output.flush
 
         # Key Processor
-        # self._key_proc = KeyProc(callback=self._emitter.emit_func(EVENT_KEY))
-
-        # TODO: REMOVE prompt_toolkit DEPENDENCY
-        # self._key_bindings = prompt_toolkit.key_binding.KeyBindings()
-        # self._key_processor = prompt_toolkit.key_binding.key_processor.KeyProcessor(self._key_bindings)
-
-        # EXTEND: KeyBindings
-        # self.kb = lambda key, *keys: None #self._key_bindings.add(key, *keys)
-        # self.kb_add = lambda key, *keys, func=None: None #self._key_bindings.add(key, *keys) if func is None else self._key_bindings.add(key, *keys)(func)
-        # self.kb_del = lambda *func_or_keys: None #self._key_bindings.remove(*func_or_keys)
+        self._key_proc = KeyProc()
 
     # - - - - - - - - - - - - - - - INTERFACE - - - - - - - - - - - - - - - #
 
@@ -129,23 +121,21 @@ class TermEventLoop(object):
 
     # - - - - - - - - - - - - - - - - EVENT - - - - - - - - - - - - - - - - #
 
-    def _do_character_polling(self):
-        while self._term_input.has_chars():
-            char = self._term_input.get_chars()
-            self._emitter.emit(EVENT_KEY, char)
-
-            # self._key_proc.push_char(char)
-            # chars.append(char)
-            # self._key_proc.push_char(char)
-        # keys, dat = self._key_proc.pop_keys()
-        # if len(keys) > 0:
-        #     self._emitter.emit(EVENT_KEY, (chars, dat))
-
     def _do_size_polling(self):
+        # continuously poll for updates
         size = self._term_output.get_size()
         if size != self._term_size:
             self._term_size = size
             self._emitter.emit(EVENT_RESIZE, size[0], size[1])  # w, h
+
+    def _do_character_polling(self):
+        # Read from input stream
+        while self._term_input.has_chars():
+            chars = self._term_input.get_chars()
+            self._key_proc.push_chars(chars)
+        # process raw characters into keys
+        for key in self._key_proc.pop_keys():
+            self._emitter.emit(EVENT_KEY, key)
 
     # - - - - - - - - - - - - - - - -LOOPING- - - - - - - - - - - - - - - - #
 

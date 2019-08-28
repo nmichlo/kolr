@@ -23,8 +23,8 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
-from kolr.util.util import SingletonMeta
 import sys
+from kolr.term.escape_codes.esc import ESC
 
 
 # ========================================================================= #
@@ -32,11 +32,8 @@ import sys
 # ========================================================================= #
 
 
-class ITermInput(object, metaclass=SingletonMeta):
-    def set_raw_mode(self, enable): raise NotImplementedError()
-
-    def get_chars(self): raise NotImplementedError()
-    def has_chars(self): raise NotImplementedError()
+class IKeyProc(object):
+    def push_chars(self, string): raise NotImplementedError()
 
 
 # ========================================================================= #
@@ -45,44 +42,47 @@ class ITermInput(object, metaclass=SingletonMeta):
 
 
 def _create_unix():
-    """
-    https://stackoverflow.com/questions/2408560/python-nonblocking-console-input
-    http://code.activestate.com/recipes/134892
-    http://man7.org/linux/man-pages/man3/termios.3.html
-    """
-    import tty
-    import termios
-    import select
-    import os
-    from codecs import getincrementaldecoder
+    import re
 
-    class _Unix(ITermInput):
+    _mouse_event_regex = re.compile('^' + re.escape('\x1b[') + r'<?([\d]+?);([\d]+?);([\d]+?)([mM])')
+
+    def _mouse_event_proc(data):
+        t, x, y, m = data
+        # TODO: this is super inefficient
+        m = {'M': 'down', 'm': 'up'}[m]
+        t = {0: 'mouse-' + m, 64: 'mouse-wheel-down', 65: 'mouse-wheel-up'}.get(int(t), 'unknown-' + t)
+        return t, (x, y)
+
+    special_chars = [
+        (_mouse_event_regex, _mouse_event_proc)
+    ]
+
+    class _Unix(IKeyProc):
         def __init__(self):
-            self._old_term_settings = None
-            self._decoder = getincrementaldecoder('utf-8')()
+            self._chars_buf = []
 
-        def set_raw_mode(self, enable):
-            assert bool(self._old_term_settings is None) == bool(enable)
-            if enable:
-                self._old_term_settings = termios.tcgetattr(sys.stdin)
-                tty.setraw(sys.stdin)       # Captures ctrl-c and more | tty.setcbreak(sys.stdin) # Responds to ctrl-c
-            else:
-                termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, self._old_term_settings)
-                self._old_term_settings = None
+        def push_chars(self, chars):
+            self._chars_buf.append(chars)
 
-        # def get_char(self):
-        #     if self.has_chars():
-        #         return sys.stdin.read(1) # Buffered Read - Blocks if no data.
-        #     return None
-
-        def get_chars(self):
-            data = os.read(sys.stdin.fileno(), 1024)  # Unbuffered Read - continues if no data.
-            return self._decoder.decode(data)
-
-        def has_chars(self):
-            rlist, wlist, xlist = select.select([sys.stdin], [], [], 0)
-            return rlist != []
-
+        def pop_keys(self):
+            string = ''.join(self._chars_buf)
+            keys, self._chars_buf = [], []
+            while string:
+                char, strip = string[0], 1
+                if char == ESC:
+                    match = None
+                    for (regex, proc) in special_chars:
+                        match = regex.search(string)
+                        if match:
+                            strip = len(match.group())
+                            keys.append(proc(match.groups()))
+                            break
+                    if match:
+                        char = None
+                if char:
+                    keys.append(('key', char))
+                string = string[strip:]
+            return keys
     return _Unix
 
 # ========================================================================= #
@@ -91,9 +91,7 @@ def _create_unix():
 
 
 def _create_windows():
-    import msvcrt
-
-    class _Windows(ITermInput):
+    class _Windows(IKeyProc):
         pass
 
     raise NotImplementedError('Windows is unsupported')
@@ -107,9 +105,9 @@ def _create_windows():
 
 
 if sys.platform in ('win32', 'cygwin'):
-    TermInput = _create_windows()
+    KeyProc = _create_windows()
 else:
-    TermInput = _create_unix()
+    KeyProc = _create_unix()
 
 
 # ========================================================================= #

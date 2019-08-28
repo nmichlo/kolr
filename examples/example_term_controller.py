@@ -35,9 +35,8 @@ if __name__ == '__main__':
     @screen.on(EVENT_KEY)
     def key_callback(key):
         global k
-        if (get_ord(key) in {3}):
-            screen.stop()
-        if (key[0] in ['\x03', ['\x03'], [['\x03']]]):
+        # overdone for testing purposes so i can just return random stuff
+        if any(k in ['\x03', ['\x03'], [['\x03']]] or get_ord(k) == 3 for k in key):
             screen.stop()
         k = key
 
