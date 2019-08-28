@@ -25,6 +25,7 @@
 
 
 from kolr.util.util import SingletonMeta
+from collections import deque
 import sys
 
 
@@ -39,8 +40,6 @@ class ITermInput(object, metaclass=SingletonMeta):
     def get_char(self): raise NotImplementedError()
     def has_char(self): raise NotImplementedError()
 
-    def get_size(self): raise NotImplementedError()
-
 
 class ITermOutput(object, metaclass=SingletonMeta):
     def set_cursor_hidden(self, enable): raise NotImplementedError()
@@ -48,15 +47,15 @@ class ITermOutput(object, metaclass=SingletonMeta):
     def set_mouse_support(self, enable): raise NotImplementedError()
     def set_bracket_paste(self, enable): raise NotImplementedError()
     def set_auto_wrap(self, enable): raise NotImplementedError()
+    def reset(self): raise NotImplementedError()
 
     def clear(self): raise NotImplementedError()
-
-    def cursor_goto(self, x, y): raise NotImplementedError()
-
     def write_unsafe(self, string): raise NotImplementedError()
     def write(self, string): raise NotImplementedError()
-
     def flush(self): raise NotImplementedError()
+
+    def cursor_goto(self, x, y): raise NotImplementedError()
+    def get_size(self): raise NotImplementedError()
 
 
 # ========================================================================= #
@@ -69,27 +68,20 @@ class _TermInputPromptToolkit(ITermInput):
     def __init__(self, term_input):
         self._input = term_input
         self._raw_input_control = None
-        self._key_buffer = []
+        self._key_buffer = deque()
 
     def set_raw_mode(self, enable):
         self._input.raw_mode().__enter__() if enable else self._input.raw_mode().__exit__()
 
     def get_char(self):
         if self.has_char():
-            char = self._key_buffer[0]
-            self._key_buffer = self._key_buffer[1:]
-            return char  # KeyPress
+            return self._key_buffer.popleft()  # KeyPress
         return None
 
     def has_char(self):
         chars = self._input.read_keys()  # List[KeyPress]
         self._key_buffer.extend(chars)
         return len(self._key_buffer) > 0
-
-    def get_size(self):
-        size = self._output.get_size()
-        w, h = (size.columns, size.rows)
-        return w, h
 
 
 # TODO: REMOVE prompt_toolkit DEPENDENCY
@@ -110,16 +102,19 @@ class _TerminalOutputPromptToolkit(ITermOutput):
 
     def clear(self):
         self._output.erase_screen()
-    def cursor_goto(self, x, y):
-        self._output.cursor_goto(y + 1, x + 1)
-
     def write_unsafe(self, string):
         self._output.write_raw(string)
     def write(self, string):
         self._output.write(string)
-
     def flush(self):
         self._output.flush()
+
+    def cursor_goto(self, x, y):
+        self._output.cursor_goto(y + 1, x + 1)
+    def get_size(self):
+        size = self._output.get_size()
+        w, h = (size.columns, size.rows)
+        return w, h
 
 
 # ========================================================================= #
@@ -133,75 +128,68 @@ def _create_interfaces_unix():
     http://code.activestate.com/recipes/134892
     http://man7.org/linux/man-pages/man3/termios.3.html
     """
-
     import os
     import tty
     import termios
     import select
     import kolr.term.escape_codes as ec
+    from prompt_toolkit.input.vt100 import Vt100Input
 
-    class TermInputUnix(ITermInput):
+    class TermInputUnix(_TermInputPromptToolkit): # TermInputUnix(ITermInput):
         def __init__(self):
+            super().__init__(Vt100Input(sys.stdin))
             self._old_term_settings = None
 
         def set_raw_mode(self, enable):
+            assert bool(self._old_term_settings is None) == bool(enable)
             if enable:
-                assert self._old_term_settings is None
-                # INIT
                 self._old_term_settings = termios.tcgetattr(sys.stdin)
-                tty.setraw(sys.stdin)       # Captures ctrl-c and more
-                # tty.setcbreak(sys.stdin)  # Responds to ctrl-c
+                tty.setraw(sys.stdin)       # Captures ctrl-c and more | tty.setcbreak(sys.stdin) # Responds to ctrl-c
             else:
-                assert self._old_term_settings is not None
-                # RESET
                 termios.tcsetattr(sys.stdin, termios.TCSAFLUSH, self._old_term_settings)
                 self._old_term_settings = None
 
-        def get_char(self):
-            if self.has_char():
-                return sys.stdin.read(1)
-            return None
-
-        def has_char(self):
-            # rlist: wait for reading | wlist: wait for writing | xlist: wait ``exceptional condition''
-            rlist, wlist, xlist = select.select([sys.stdin], [], [], 0)
-            return rlist != []
-
-        def get_size(self):
-            x, y = os.get_terminal_size()
-            return x, y
+        # def get_char(self):
+        #     if self.has_char():
+        #         return sys.stdin.read(1)
+        #     return None
+        #
+        # def has_char(self):
+        #     rlist, wlist, xlist = select.select([sys.stdin], [], [], 0)
+        #     return rlist != []
 
     class TermOutputUnix(ITermOutput):
         def set_cursor_hidden(self, enable):
-            self.write_unsafe(ec.csi.CH if enable else ec.csi.CS)
-
+            self.write_unsafe(ec.csi.decset.DECTCEM if enable else ec.csi.decrst.DECTCEM)
         def set_alternate_buffer(self, enable):
-            self.write_unsafe(ec.csi.SBE if enable else ec.csi.SBD)
-
+            self.write_unsafe(ec.csi.decset.RESOURCE_SAVE_CURSOR_ALT_BUFFER if enable else ec.csi.decrst.RESOURCE_SAVE_CURSOR_ALT_BUFFER)
         def set_mouse_support(self, enable):
-            # TODO: add mouse support
-            pass
-
+            self.write_unsafe(ec.csi.decset.MOUSE_EVENTS_X10 if enable else ec.csi.decrst.MOUSE_EVENTS_X10)
+            self.write_unsafe(ec.csi.decset.MOUSE_EVENTS_X11 if enable else ec.csi.decrst.MOUSE_EVENTS_X11)
+            self.write_unsafe(ec.csi.decset.MOUSE_MODE_URXVT if enable else ec.csi.decrst.MOUSE_MODE_URXVT)
+            self.write_unsafe(ec.csi.decset.MOUSE_MODE_SGR if enable else ec.csi.decrst.MOUSE_MODE_SGR)
         def set_bracket_paste(self, enable):
-            self.write_unsafe(ec.csi.BPE if enable else ec.csi.BPD)
-
+            self.write_unsafe(ec.csi.decset.BRACKET_PASTE if enable else ec.csi.decrst.BRACKET_PASTE)
         def set_auto_wrap(self, enable):
-            self.write_unsafe(ec.csi.BPE if enable else ec.csi.BPD)
+            self.write_unsafe(ec.csi.decset.DECAWM if enable else ec.csi.decrst.DECAWM)
+        def reset(self):
+            self.write_unsafe(ec.esc.RIS)
 
         def clear(self):
-            self.write_unsafe(ec.csi.ed(2))
+            self.write_unsafe(ec.csi.ed.ERASE_SAVED)
+            self.write_unsafe(ec.csi.ed.ERASE_ALL)
+        def write_unsafe(self, string):
+            sys.stdout.write(string)
+        def write(self, string):
+            self.write_unsafe(string.replace(ec.esc.ESC, '§'))
+        def flush(self):
+            sys.stdout.flush()
 
         def cursor_goto(self, x, y):
             self.write_unsafe(ec.csi.cup(y+1, x+1))
-
-        def write_unsafe(self, string):
-            sys.stdout.write(string)
-
-        def write(self, string):
-            self.write_unsafe(string.replace(ec.esc.ESC, '§'))
-
-        def flush(self):
-            sys.stdout.flush()
+        def get_size(self):
+            x, y = os.get_terminal_size()
+            return x, y
 
     return TermInputUnix, TermOutputUnix
 
@@ -216,14 +204,13 @@ def _create_interfaces_unix_prompt_toolkit():
     class TermInputUnixPromptToolkit(_TermInputPromptToolkit):
         def __init__(self):
             super().__init__(Vt100Input(sys.stdin))
-            self._old_term_settings = None
 
     class TermOutputUnixPromptToolkit(_TerminalOutputPromptToolkit):
         def __init__(self):
                 super().__init__(Vt100_Output(sys.stdout, TermOutputUnixPromptToolkit.get_size))
 
-        @staticmethod
-        def get_size():
+        @classmethod
+        def get_size(cls):
             columns, rows = os.get_terminal_size()
             return Size(rows, columns)
 
@@ -270,8 +257,9 @@ def _create_interfaces_windows_prompt_toolkit():
 
 if sys.platform in ('win32', 'cygwin'):
     TermInput, TermOutput = _create_interfaces_windows_prompt_toolkit()
+    print('WARNING, windows uses untested support through prompt_toolkit.', sys.stderr)
 else:
-    TermInput, TermOutput = _create_interfaces_unix_prompt_toolkit()
+    TermInput, TermOutput = _create_interfaces_unix()
 
 
 # ========================================================================= #

@@ -26,6 +26,8 @@
 
 import sys
 import traceback
+
+
 from kolr.term.interface import TermInput, TermOutput
 from kolr.util.events import Emitter
 from kolr.util.loop import RenderLoop
@@ -34,7 +36,7 @@ import atexit
 # TODO: REMOVE prompt_toolkit DEPENDENCY
 import prompt_toolkit.key_binding
 import prompt_toolkit.key_binding.key_processor
-import prompt_toolkit.keys
+from prompt_toolkit.keys import Keys
 
 
 # ========================================================================= #
@@ -120,9 +122,11 @@ class TerminalController(object):
 
     def _initialise(self):
         self._set_term_defaults(True)
+        self._term_output.flush()
 
     def _finalise(self):
         self._set_term_defaults(False)
+        self._term_output.flush()
 
     def _exit_finalise(self):
         self._finalise()
@@ -153,14 +157,19 @@ class TerminalController(object):
     #         sys.stderr.flush()
 
     def _do_character_polling(self):
+        # while self._term_input.has_char():
+        #     char = self._term_input.get_char()
+        #     self._emitter.emit(EVENT_KEY, char)
+
         while self._term_input.has_char():
             char = self._term_input.get_char()
             self._key_processor.feed(char)
+            self._emitter.emit(EVENT_KEY, char.data)
             # if char.key in {Keys.Vt100MouseEvent, Keys.WindowsMouseEvent}:
             #     self._emitter.emit(EVENT_MOUSE, char.data)
             # else:
             #     self._emitter.emit(EVENT_KEY, (char.key, char.data))
-        self._key_processor.process_keys()
+        # self._key_processor.process_keys()
 
     def _do_size_polling(self):
         size = self._term_output.get_size()

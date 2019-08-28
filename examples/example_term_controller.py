@@ -35,9 +35,9 @@ if __name__ == '__main__':
     @screen.on(EVENT_KEY)
     def key_callback(key):
         global k
-        if key == 27:
+        if get_ord(key) in {27}:
             screen.stop()
-        k = key
+        k = key.encode()
 
     @screen.on(EVENT_RESIZE)
     def render_callback(_w, _h):
@@ -50,10 +50,16 @@ if __name__ == '__main__':
         global x, y
         x = event
 
+    def get_ord(x):
+        try:
+            return ord(x)
+        except:
+            return None
+
     @screen.on(EVENT_RENDER)
     def render_callback(delta):
         screen.clear()
-        screen.write_str(f'key: {k}', y=0)
+        screen.write_str(f'key: {k} {get_ord(k)}', y=0)
         screen.write_str(f'x: {x} y: {y}', y=1)
         screen.write_str(f'w: {w} h: {h}', y=2)
         screen.write_str(f'delta: {delta}', y=3)
