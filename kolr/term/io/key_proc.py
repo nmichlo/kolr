@@ -51,7 +51,7 @@ def _create_unix():
         # TODO: this is super inefficient
         m = {'M': 'down', 'm': 'up'}[m]
         t = {0: 'mouse-' + m, 64: 'mouse-wheel-down', 65: 'mouse-wheel-up'}.get(int(t), 'unknown-' + t)
-        return t, (x, y)
+        return t, (int(x)-1, int(y)-1)
 
     special_chars = [
         (_mouse_event_regex, _mouse_event_proc)
@@ -77,10 +77,10 @@ def _create_unix():
                             strip = len(match.group())
                             keys.append(proc(match.groups()))
                             break
-                    if match:
-                        char = None
-                if char:
-                    keys.append(('key', char))
+                    if not match:
+                        keys.append((ESC, ESC))
+                else:
+                    keys.append((char, char))
                 string = string[strip:]
             return keys
     return _Unix

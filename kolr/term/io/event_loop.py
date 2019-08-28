@@ -25,7 +25,7 @@
 
 
 from kolr.term.io.input import TermInput
-from kolr.term.io.key_processor import KeyProc
+from kolr.term.io.key_proc import KeyProc
 from kolr.term.io.output import TermOutput
 from kolr.util.events import Emitter
 from kolr.util.loop import RenderLoop
@@ -86,15 +86,26 @@ class TermEventLoop(object):
         self.cursor_goto = self._term_output.cursor_goto
         self.flush = self._term_output.flush
 
-        # Key Processor
+        # Keys
         self._key_proc = KeyProc()
+        self._key_emitter = Emitter()
+
+        # EXTEND: Emitter (Key Bindings)
+        self.on_key = self._key_emitter.on
+        self.off_key = self._key_emitter.off
 
     # - - - - - - - - - - - - - - - INTERFACE - - - - - - - - - - - - - - - #
 
-    def write_str(self, string, x=None, y=None):
+    def write(self, string, x=None, y=None, unsafe=False):
         if x is not None or y is not None:
             self.cursor_goto(x or 0, y or 0)
-        self._term_output.write(string)
+        if unsafe:
+            self._term_output.write(string)
+        else:
+            self._term_output.write_unsafe(string)
+
+    def print(self, *strings, x=None, y=None, unsafe=False):
+        self.write(''.join(str(s) for s in strings), x=x, y=y, unsafe=unsafe)
 
     # - - - - - - - - - - - - - - - TERMINALS - - - - - - - - - - - - - - - #
 
@@ -136,6 +147,7 @@ class TermEventLoop(object):
         # process raw characters into keys
         for key in self._key_proc.pop_keys():
             self._emitter.emit(EVENT_KEY, key)
+            self._key_emitter.emit(key[0], key[1])
 
     # - - - - - - - - - - - - - - - -LOOPING- - - - - - - - - - - - - - - - #
 
