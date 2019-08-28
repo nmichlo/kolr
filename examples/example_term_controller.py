@@ -23,21 +23,23 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
-from kolr.term.controller import TerminalController, EVENT_RESIZE, EVENT_KEY, EVENT_RENDER, EVENT_MOUSE
+from kolr.term.io.event_loop import TermEventLoop, EVENT_RESIZE, EVENT_KEY, EVENT_RENDER, EVENT_MOUSE
 
 
 if __name__ == '__main__':
 
-    p, k, (w, h), (x, y) = None, None, (None, None), (None, None)
+    p, k, (w, h), (x, y) = None, None, (0, 0), (0, 0)
 
-    screen = TerminalController(frame_rate=10)
+    screen = TermEventLoop(frame_rate=10)
 
     @screen.on(EVENT_KEY)
     def key_callback(key):
         global k
-        if get_ord(key) in {27}:
+        if (get_ord(key) in {3}):
             screen.stop()
-        k = key.encode()
+        if (key[0] in ['\x03', ['\x03'], [['\x03']]]):
+            screen.stop()
+        k = key
 
     @screen.on(EVENT_RESIZE)
     def render_callback(_w, _h):
@@ -59,21 +61,22 @@ if __name__ == '__main__':
     @screen.on(EVENT_RENDER)
     def render_callback(delta):
         screen.clear()
-        screen.write_str(f'key: {k} {get_ord(k)}', y=0)
-        screen.write_str(f'x: {x} y: {y}', y=1)
-        screen.write_str(f'w: {w} h: {h}', y=2)
-        screen.write_str(f'delta: {delta}', y=3)
+        screen.write_str(f'key: {str(k)[:w-10]}', y=0)
+        screen.write_str(f'key ord: {get_ord(k)}', y=1)
+        screen.write_str(f'x: {x} y: {y}', y=2)
+        screen.write_str(f'w: {w} h: {h}', y=3)
+        screen.write_str(f'delta: {delta}', y=4)
         if p:
             screen.write_str(f'pressed: {p}', y=5)
         screen.flush()
 
-    @screen.kb('<any>')
-    def _(event):
-        global p
-        p = event
-
-    @screen.kb('c-c')
-    def _(event):
-        screen.stop()
+    # @screen.kb('<any>')
+    # def _(event):
+    #     global p
+    #     p = event
+    #
+    # @screen.kb('c-c')
+    # def _(event):
+    #     screen.stop()
 
     screen.start()

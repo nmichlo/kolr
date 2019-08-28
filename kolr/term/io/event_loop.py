@@ -24,19 +24,11 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
-import sys
-import traceback
-
-
-from kolr.term.interface import TermInput, TermOutput
+from kolr.term.io.input import TermInput
+from kolr.term.io.output import TermOutput
 from kolr.util.events import Emitter
 from kolr.util.loop import RenderLoop
 import atexit
-
-# TODO: REMOVE prompt_toolkit DEPENDENCY
-import prompt_toolkit.key_binding
-import prompt_toolkit.key_binding.key_processor
-from prompt_toolkit.keys import Keys
 
 
 # ========================================================================= #
@@ -55,7 +47,7 @@ EVENT_RENDER = 'render'
 EVENT_UPDATE = 'update'
 
 
-class TerminalController(object):
+class TermEventLoop(object):
 
     def __init__(self, frame_rate=5, tick_rate=2):
         super().__init__()
@@ -93,14 +85,17 @@ class TerminalController(object):
         self.cursor_goto = self._term_output.cursor_goto
         self.flush = self._term_output.flush
 
+        # Key Processor
+        # self._key_proc = KeyProc(callback=self._emitter.emit_func(EVENT_KEY))
+
         # TODO: REMOVE prompt_toolkit DEPENDENCY
-        self._key_bindings = prompt_toolkit.key_binding.KeyBindings()
-        self._key_processor = prompt_toolkit.key_binding.key_processor.KeyProcessor(self._key_bindings)
+        # self._key_bindings = prompt_toolkit.key_binding.KeyBindings()
+        # self._key_processor = prompt_toolkit.key_binding.key_processor.KeyProcessor(self._key_bindings)
 
         # EXTEND: KeyBindings
-        self.kb = lambda key, *keys: self._key_bindings.add(key, *keys)
-        self.kb_add = lambda key, *keys, func=None: self._key_bindings.add(key, *keys) if func is None else self._key_bindings.add(key, *keys)(func)
-        self.kb_del = lambda *func_or_keys: self._key_bindings.remove(*func_or_keys)
+        # self.kb = lambda key, *keys: None #self._key_bindings.add(key, *keys)
+        # self.kb_add = lambda key, *keys, func=None: None #self._key_bindings.add(key, *keys) if func is None else self._key_bindings.add(key, *keys)(func)
+        # self.kb_del = lambda *func_or_keys: None #self._key_bindings.remove(*func_or_keys)
 
     # - - - - - - - - - - - - - - - INTERFACE - - - - - - - - - - - - - - - #
 
@@ -134,42 +129,17 @@ class TerminalController(object):
 
     # - - - - - - - - - - - - - - - - EVENT - - - - - - - - - - - - - - - - #
 
-    # def _handle_key_event(self, char):
-    #     if char.key == 'c-c' or char.key == 'escape':
-    #         return False
-    #     else:
-    #         self._emitter.emit(EVENT_KEY, (char.key, char.data))
-    #
-    # def _handle_mouse_event(self, char):
-    #     try:
-    #         code, x, y = char.data[3:-1].split(';')
-    #         action = None
-    #         if code == '0':
-    #             action = 'click-press' if (char.data[-1] == 'M') else 'click-release'
-    #         elif code == '65':
-    #             action = 'scroll-down'
-    #         elif code == '64':
-    #             action = 'scroll-up'
-    #         self._emitter.emit(EVENT_MOUSE, (int(x), int(y), action))
-    #     except Exception as e:
-    #         traceback.print_exc()
-    #         sys.stderr.write('An unexpected error occurred! {}'.format(e))
-    #         sys.stderr.flush()
-
     def _do_character_polling(self):
-        # while self._term_input.has_char():
-        #     char = self._term_input.get_char()
-        #     self._emitter.emit(EVENT_KEY, char)
+        while self._term_input.has_chars():
+            char = self._term_input.get_chars()
+            self._emitter.emit(EVENT_KEY, char)
 
-        while self._term_input.has_char():
-            char = self._term_input.get_char()
-            self._key_processor.feed(char)
-            self._emitter.emit(EVENT_KEY, char.data)
-            # if char.key in {Keys.Vt100MouseEvent, Keys.WindowsMouseEvent}:
-            #     self._emitter.emit(EVENT_MOUSE, char.data)
-            # else:
-            #     self._emitter.emit(EVENT_KEY, (char.key, char.data))
-        # self._key_processor.process_keys()
+            # self._key_proc.push_char(char)
+            # chars.append(char)
+            # self._key_proc.push_char(char)
+        # keys, dat = self._key_proc.pop_keys()
+        # if len(keys) > 0:
+        #     self._emitter.emit(EVENT_KEY, (chars, dat))
 
     def _do_size_polling(self):
         size = self._term_output.get_size()
