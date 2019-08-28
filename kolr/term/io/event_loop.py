@@ -28,7 +28,7 @@ from kolr.term.io.input import TermInput
 from kolr.term.io.key_proc import KeyProc
 from kolr.term.io.output import TermOutput
 from kolr.util.events import Emitter
-from kolr.util.loop import RenderLoop
+from kolr.util.loop import UpdateRenderLoop
 import atexit
 
 
@@ -54,7 +54,7 @@ class TermEventLoop(object):
         super().__init__()
 
         # INIT: event manager
-        self._emitter = Emitter([EVENT_APP_START, EVENT_APP_END, EVENT_RESIZE, EVENT_MOUSE, EVENT_KEY, EVENT_RENDER, EVENT_UPDATE])
+        self._emitter = Emitter([EVENT_RESIZE, EVENT_MOUSE, EVENT_KEY, EVENT_APP_START, EVENT_APP_END, EVENT_RENDER, EVENT_UPDATE])
 
         # INIT: terminal interface
         self._term_size = (None, None)
@@ -62,18 +62,18 @@ class TermEventLoop(object):
         self._term_output = TermOutput()
 
         # INIT: game loop
-        self._loop = RenderLoop(
+        self._loop = UpdateRenderLoop(
             frame_rate=frame_rate,
             tick_rate=tick_rate,
             max_frame_skip=-1,
-            on_loop_start=self._on_loop_start,
+            on_start=self._on_start,
             on_loop_event=self._on_loop_event,
             on_loop_update=self._emitter.emit_func(EVENT_UPDATE),
-            on_loop_render=self._emitter.emit_func(EVENT_RENDER),
-            on_loop_end=self._on_loop_end,
+            on_loop_render=self._on_loop_render,
+            on_end=self._on_end,
         )
 
-        # EXTEND: RenderLoop
+        # EXTEND: UpdateRenderLoop
         self.start = self._loop.start
         self.stop = self._loop.stop
 
@@ -84,7 +84,6 @@ class TermEventLoop(object):
         # EXTEND: TerminalInterface
         self.clear = self._term_output.clear
         self.cursor_goto = self._term_output.cursor_goto
-        self.flush = self._term_output.flush
 
         # Keys
         self._key_proc = KeyProc()
@@ -151,7 +150,7 @@ class TermEventLoop(object):
 
     # - - - - - - - - - - - - - - - -LOOPING- - - - - - - - - - - - - - - - #
 
-    def _on_loop_start(self):
+    def _on_start(self):
         self._set_term_defaults(True)
         atexit.register(self._exit_finalise)
         self._emitter.emit(EVENT_APP_START)
@@ -160,7 +159,11 @@ class TermEventLoop(object):
         self._do_size_polling()
         self._do_character_polling()
 
-    def _on_loop_end(self):
+    def _on_loop_render(self, delta):
+        self._emitter.emit(EVENT_RENDER, delta)
+        self._term_output.flush()
+
+    def _on_end(self):
         atexit.unregister(self._exit_finalise)
         self._finalise()
         self._emitter.emit(EVENT_APP_END)

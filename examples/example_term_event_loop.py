@@ -21,6 +21,8 @@
 #  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #  SOFTWARE.
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
+
+
 from kolr.term.escape_codes import csi
 from kolr.term.escape_codes.esc import ESC
 from kolr.term.io.event_loop import TermEventLoop, EVENT_RESIZE, EVENT_KEY, EVENT_RENDER, EVENT_MOUSE
@@ -35,9 +37,6 @@ if __name__ == '__main__':
     @screen.on(EVENT_KEY)
     def key_callback(key):
         global k
-        # overdone for testing purposes so i can just return random stuff
-        # if any(k in ['\x03', ['\x03'], [['\x03']]] or get_ord(k) == 3 for k in key):
-        #     screen.stop()
         k = key
 
     @screen.on(EVENT_RESIZE)
@@ -59,7 +58,7 @@ if __name__ == '__main__':
 
     @screen.on(EVENT_RENDER)
     def render_callback(delta):
-        # screen.clear()
+        screen.clear()
         screen.write(f'key: {str(k)[:w-10]}',  y=0)
         screen.write(f'key ord: {get_ord(k)}', y=1)
         screen.write(f'x: {x} y: {y}',         y=2)
@@ -67,7 +66,6 @@ if __name__ == '__main__':
         screen.write(f'delta: {delta}',        y=4)
         if p:
             screen.write(f'pressed: {p}',      y=5)
-        screen.flush()
 
     @screen.on_key(ESC)
     def _(key):

@@ -25,13 +25,20 @@
 
 import time
 import matplotlib.pyplot as plt
-from kolr.util.loop import RenderLoopABC
+from collections import defaultdict
+from kolr.util.loop import UpdateRenderLoop
 
 
-class Loop(RenderLoopABC):
+class Loop(UpdateRenderLoop):
     def __init__(self, runtime_ms=5000, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from collections import defaultdict
+
+        super().__init__(
+            on_start=self._on_start,
+            on_loop_event=self._on_loop_event,
+            on_loop_update=self._on_loop_update,
+            on_loop_render=self._on_loop_render,
+            on_end=self._on_end,
+        )
 
         self._runtime_ms = runtime_ms
         self.update_count = 0
@@ -48,15 +55,14 @@ class Loop(RenderLoopABC):
         self.ys[key].append(1)
         return t
 
-    def _on_loop_start(self):
+    def _on_start(self):
         self.start_time = time.time()
         self.append('start')
 
-    def _on_loop_event(self) -> bool:
+    def _on_loop_event(self):
         t = self.append('event')
         if t*1000 > self._runtime_ms:
-            return False
-        return True
+            self.stop()
 
     def _on_loop_update(self):
         import random
@@ -72,7 +78,7 @@ class Loop(RenderLoopABC):
         print(f'[R] fps: {self.render_count / (time.time() - self.start_time):.2f} tps: {self.update_count / (time.time() - self.start_time):.2f}')
         self.append('render')
 
-    def _on_loop_end(self):
+    def _on_end(self):
         self.append('end')
 
     def plot(self):

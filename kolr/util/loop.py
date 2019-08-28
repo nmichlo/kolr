@@ -28,7 +28,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Callable, Optional
 
 
-class RenderLoop(object):
+class UpdateRenderLoop(object):
 
     def __init__(
             self,
@@ -36,11 +36,13 @@ class RenderLoop(object):
             tick_rate: float = 5,
             max_frame_skip: int = 0,
             # Callbacks
-            on_loop_start: Optional[Callable[[], None]] = None,
+            on_start: Optional[Callable[[], None]] = None,
+
             on_loop_event: Optional[Callable[[], None]] = None,
             on_loop_update: Optional[Callable[[], None]] = None,
             on_loop_render: Optional[Callable[[float], None]] = None,
-            on_loop_end: Optional[Callable[[None], None]] = None,
+
+            on_end: Optional[Callable[[None], None]] = None,
     ):
         # params
         max_frame_skip = float('inf') if max_frame_skip < 0 else max_frame_skip
@@ -49,11 +51,11 @@ class RenderLoop(object):
         self._max_frame_skip = max_frame_skip
         self._running = False
         # callbacks
-        self._on_loop_start = on_loop_start
+        self._on_start = on_start
         self._on_loop_event = on_loop_event
         self._on_loop_update = on_loop_update
         self._on_loop_render = on_loop_render
-        self._on_loop_end = on_loop_end
+        self._on_end = on_end
 
     def start(self):
         if self._running:
@@ -79,8 +81,8 @@ class RenderLoop(object):
 
         assert not self._running
 
-        if self._on_loop_start:
-            self._on_loop_start()
+        if self._on_start:
+            self._on_start()
 
         self._running = True
         ave_time, sleep, lag, last_time = 0, 0, 0, time.time()
@@ -109,45 +111,5 @@ class RenderLoop(object):
             if sleep > 0:
                 time.sleep(sleep)
 
-        if self._on_loop_end:
-            self._on_loop_end()
-
-
-class RenderLoopABC(RenderLoop, metaclass=ABCMeta):
-
-    def __init__(
-            self,
-            frame_rate: float = 10,
-            tick_rate: float = 5,
-            max_frame_skip: int = 0,
-    ):
-        super().__init__(
-            frame_rate=frame_rate,
-            tick_rate=tick_rate,
-            max_frame_skip=max_frame_skip,
-            on_loop_start=self._on_loop_start,
-            on_loop_event=self._on_loop_event,
-            on_loop_update=self._on_loop_update,
-            on_loop_render=self._on_loop_render,
-            on_loop_end=self._on_loop_end,
-        )
-
-    @abstractmethod
-    def _on_loop_start(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_loop_event(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_loop_update(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_loop_render(self, delta: float):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def _on_loop_end(self):
-        raise NotImplementedError()
+        if self._on_end:
+            self._on_end()
