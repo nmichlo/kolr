@@ -62,7 +62,7 @@ class Component:
         self._w = None
         self._h = None
         # buffer
-        self._buffer: DoubleBuffer = None
+        self._buffer: DoubleBuffer = DoubleBuffer(0, 0)
         # stretch
         self._node = stretched.Node(stretched.Style(
             size=stretched.Size(
@@ -84,9 +84,11 @@ class Component:
         return self._node.dirty
 
     def compute_layout(self, width, height):
+        # Resize Buffer
+        if self._buffer.size != (width, height):
+            self._buffer = self._buffer.copy(width, height)
+        # Recompute
         self._node.compute_layout(stretched.Size(width, height))
-        if not self._buffer or self._buffer.size != (width, height):
-            self._buffer = DoubleBuffer(width, height)
 
     # - - - - - - - - - - - - - - - RECTANGLE - - - - - - - - - - - - - - - #
 
@@ -206,7 +208,7 @@ class Component:
             child.repaint()
             (cx, cy), (sx, sy) = child.pos, self.pos
             self._buffer.set_from(child._buffer, cx - sx, cy - sy)
-        self._buffer.flush()
+        self._buffer.swap()
 
     def paint(self, buffer):
         # ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -221,13 +223,14 @@ class Component:
         # ┃ U+256x  ┃   ╠	╡	╢	╣	╤	╥	╦	╧	╨	╩	╪	╫	╬	╭	╮	╯   ┃
         # ┃ U+257x  ┃   ╰	╱	╲	╳	╴	╵	╶	╷	╸	╹	╺	╻	╼	╽	╾	╿   ┃
         # ┗━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
-        # for x in range(1, buffer.width-1):
-        #     buffer.set(x, 0, '━')
-        #     buffer.set(x, buffer.height-1, '━')
-        # for y in range(1, buffer.height-1):
-        #     buffer.set(0, y, '┃')
-        #     buffer.set(buffer.width-1, y, '┃')
-        buffer.set(0, 0, 'R')
+        for x in range(buffer.width):
+            buffer.set(x, 0, '━')
+            buffer.set(x, buffer.height-1, '━')
+        for y in range(buffer.height):
+            buffer.set(0, y, '┃')
+            buffer.set(buffer.width-1, y, '┃')
+
+        buffer.set(0, 0, '┏')
         buffer.set(buffer.width-1, 0, '┓')
         buffer.set(0, buffer.height-1, '┗')
         buffer.set(buffer.width-1, buffer.height-1, '┛')

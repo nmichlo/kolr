@@ -49,6 +49,14 @@ class Buffer(object):
     def size(self):
         return self._width, self._height
 
+    def copy(self, width=None, height=None):
+        buf = self.__class__(
+            self.width if (width is None) else width,
+            self.height if (height is None) else height,
+        )
+        buf.set_from(self)
+        return buf
+
     def get(self, x, y):
         """
         Get a value from the hidden buffer.
@@ -98,15 +106,15 @@ class Buffer(object):
         """
         :param fill: The immutable value to fill the entire buffer
         """
-        self._buffer = Buffer._make_2d_array(self._width, self._height, fill)
+        self._buffer = Buffer.make_2d_array(self._width, self._height, fill)
 
     @staticmethod
-    def _make_2d_array(w, h, fill):
+    def make_2d_array(w, h, fill):
         row = [fill for x in range(w)]
         return [row[:] for y in range(h)]  # shallow copy the rows
 
     @staticmethod
-    def _shallow_copy_2d(array):
+    def shallow_copy_2d(array):
         return [row[:] for row in array]
 
 
@@ -140,7 +148,7 @@ class DoubleBuffer(Buffer):
         self._buffer, self._buffer_visible = self._buffer_visible, self._buffer
 
     def flush(self):
-        self._buffer_visible = DoubleBuffer._shallow_copy_2d(self._buffer)
+        self._buffer_visible = DoubleBuffer.shallow_copy_2d(self._buffer)
 
     def diffs(self):
         """
@@ -149,7 +157,7 @@ class DoubleBuffer(Buffer):
         for y in range(self._height):
             visible_row, hidden_row = self._buffer_visible[y], self._buffer[y]
             for x in range(self._width):
-                if visible_row[x] != hidden_row[y]:
+                if visible_row[x] != hidden_row[x]:
                     yield x, y
 
 

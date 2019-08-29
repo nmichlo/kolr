@@ -46,17 +46,31 @@ class Window(Component):
         self.on_key = self._manager.on_key
         self.off_key = self._manager.off_key
 
+        # info
+        self._render_count = 0
+
         # IMPLEMENTS: TermManager
         @self._manager.on(EVENT_RESIZE)
         def _recompute_on_resize_terminal(w, h):
             self.compute_layout(w, h)
 
         @self._manager.on(EVENT_RENDER)
-        def _write_buffer_to_screen_on_resize(delta):
-            self._manager.clear()
+        def _write_buffer_to_screen_on_render(delta):
+            # self._manager.clear()
             self.repaint()
+            # WRITE DIFFS
+            count = 0
             for x, y in self._buffer.diffs():
                 self._manager.write(self._buffer.get(x, y), x=x, y=y, unsafe=True)
+                count += 1
+            self._buffer.swap()
+            self._buffer.flush()
+            # INFO
+            self._render_count += 1
+            self._manager.write(f'diffs: {count}    ', 1, 1)
+            self._manager.write(f'renders: {self._render_count}', 1, 2)
+            self._manager.write(f'hid: {self._buffer._buffer[0][0]}', 1, 3)
+            self._manager.write(f'vis: {self._buffer._buffer_visible[0][0]}', 1, 4)
 
     def start(self):
         self._manager.start()
