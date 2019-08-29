@@ -24,20 +24,20 @@
 
 
 from kolr.term.escape_codes import csi
-from kolr.term.escape_codes.esc import ESC
-from kolr.term.io.event_loop import TermEventLoop, EVENT_RESIZE, EVENT_KEY, EVENT_RENDER, EVENT_MOUSE
+from kolr.term.io.manager import TermManager, EVENT_RESIZE, EVENT_KEY, EVENT_RENDER, EVENT_MOUSE
 
 
 if __name__ == '__main__':
 
     p, k, (w, h), (x, y) = None, None, (0, 0), (0, 0)
+    presses = set()
 
-    screen = TermEventLoop(frame_rate=10)
+    screen = TermManager(frame_rate=10)
 
     @screen.on(EVENT_KEY)
     def key_callback(key):
         global k
-        k = key
+        k = key.data
 
     @screen.on(EVENT_RESIZE)
     def render_callback(_w, _h):
@@ -59,6 +59,8 @@ if __name__ == '__main__':
     @screen.on(EVENT_RENDER)
     def render_callback(delta):
         screen.clear()
+        for pos in presses:
+            screen.print(csi.sgr.INVERT, ' ', csi.sgr.RESET, x=pos[0], y=pos[1])
         screen.write(f'key: {str(k)[:w-10]}',  y=0)
         screen.write(f'key ord: {get_ord(k)}', y=1)
         screen.write(f'x: {x} y: {y}',         y=2)
@@ -67,13 +69,15 @@ if __name__ == '__main__':
         if p:
             screen.write(f'pressed: {p}',      y=5)
 
-    @screen.on_key(ESC)
+    @screen.on_key('escape', 'ctrl-c')
     def _(key):
         screen.stop()
 
     @screen.on_key('mouse-down')
-    def _(data):
-        x, y = data
-        screen.print(csi.sgr.INVERT, ' ', csi.sgr.RESET, x=x, y=y)
+    def _(key):
+        if key.pos in presses:
+            presses.remove(key.pos)
+        else:
+            presses.add(key.pos)
 
     screen.start()

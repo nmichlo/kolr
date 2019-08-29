@@ -48,7 +48,7 @@ EVENT_RENDER = 'render'
 EVENT_UPDATE = 'update'
 
 
-class TermEventLoop(object):
+class TermManager(object):
 
     def __init__(self, frame_rate=5, tick_rate=2):
         super().__init__()
@@ -145,8 +145,9 @@ class TermEventLoop(object):
             self._key_proc.push_chars(chars)
         # process raw characters into keys
         for key in self._key_proc.pop_keys():
-            self._emitter.emit(EVENT_KEY, key)
-            self._key_emitter.emit(key[0], key[1])
+            self._emitter.emit(EVENT_KEY, key)  # TODO: remove, or move key_processing elsewhere?
+            self._key_emitter.emit('any', key)
+            self._key_emitter.emit(key.name, key)
 
     # - - - - - - - - - - - - - - - -LOOPING- - - - - - - - - - - - - - - - #
 

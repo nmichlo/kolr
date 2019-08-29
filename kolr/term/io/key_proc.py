@@ -25,6 +25,7 @@
 
 import sys
 from kolr.term.escape_codes.esc import ESC
+from kolr.term.io.keys import MouseKey, Key
 
 
 # ========================================================================= #
@@ -44,6 +45,40 @@ class IKeyProc(object):
 def _create_unix():
     import re
 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
+    char_name_map = {
+        '\x01': 'ctrl-a',
+        '\x02': 'ctrl-b',
+        '\x03': 'ctrl-c',
+        '\x04': 'ctrl-d',
+        '\x05': 'ctrl-e',
+        '\x06': 'ctrl-f',
+        '\x07': 'ctrl-g',
+        '\x08': 'ctrl-h',
+        '\x09': 'ctrl-i',
+        '\x10': 'ctrl-j',
+        '\x11': 'ctrl-k',
+        '\x12': 'ctrl-l',
+        '\x13': 'ctrl-m',
+        '\x14': 'ctrl-n',
+        '\x15': 'ctrl-o',
+        '\x16': 'ctrl-p',
+        '\x17': 'ctrl-q',
+        '\x18': 'ctrl-r',
+        '\x19': 'ctrl-s',
+        '\x20': 'ctrl-t',
+        '\x21': 'ctrl-u',
+        '\x22': 'ctrl-v',
+        '\x23': 'ctrl-w',
+        '\x24': 'ctrl-x',
+        '\x25': 'ctrl-y',
+        '\x26': 'ctrl-z',
+        '\x1b': 'escape'
+    }
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
     _mouse_event_regex = re.compile('^' + re.escape('\x1b[') + r'<?([\d]+?);([\d]+?);([\d]+?)([mM])')
 
     def _mouse_event_proc(data):
@@ -51,11 +86,20 @@ def _create_unix():
         # TODO: this is super inefficient
         m = {'M': 'down', 'm': 'up'}[m]
         t = {0: 'mouse-' + m, 64: 'mouse-wheel-down', 65: 'mouse-wheel-up'}.get(int(t), 'unknown-' + t)
-        return t, (int(x)-1, int(y)-1)
+        return MouseKey(t, (int(x)-1, int(y)-1))
 
     special_chars = [
         (_mouse_event_regex, _mouse_event_proc)
     ]
+
+    def search(string):
+        for (regex, proc) in special_chars:
+            match = regex.search(string)
+            if match:
+                return proc(match.groups()), match.group()
+        return None, None
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
 
     class _Unix(IKeyProc):
         def __init__(self):
@@ -70,19 +114,19 @@ def _create_unix():
             while string:
                 char, strip = string[0], 1
                 if char == ESC:
-                    match = None
-                    for (regex, proc) in special_chars:
-                        match = regex.search(string)
-                        if match:
-                            strip = len(match.group())
-                            keys.append(proc(match.groups()))
-                            break
-                    if not match:
-                        keys.append((ESC, ESC))
+                    key, substr = search(string)
+                    if substr:
+                        strip = len(substr)
+                        keys.append(key)
+                    else:
+                        keys.append(Key(char_name_map.get(char, char), ESC))
                 else:
-                    keys.append((char, char))
+                    keys.append(Key(char_name_map.get(char, char), char))
                 string = string[strip:]
             return keys
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - #
+
     return _Unix
 
 # ========================================================================= #

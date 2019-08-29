@@ -50,7 +50,7 @@ class Observable(object):
                 observer(*args, **kwargs)
             except:
                 import traceback
-                traceback.print_exc()
+                traceback.print_exc(file=sys.stderr)
 
 
 class Emitter(object):
@@ -69,10 +69,13 @@ class Emitter(object):
             assert key in self._allowed
         return self._observables[key]
 
-    def on(self, key, observer=None):
+    def on(self, *keys, observer=None):
+        def wrap(func):
+            for key in keys:
+                self[key].attach(func)
         if observer is None:
-            return self[key].attach
-        return self[key].attach(observer)
+            return wrap
+        wrap(observer)
 
     def off(self, key, observer):
         return self[key].detach(observer)

@@ -27,100 +27,20 @@ import abc
 from abc import ABCMeta
 from typing import Optional, List
 import stretched
+from kolr.ui.buffer import Buffer, DoubleBuffer
 
 
 # ========================================================================= #
-# Buffer                                                                    #
-# ========================================================================= #
-
-
-class DoubleBuffer(object, metaclass=ABCMeta):
-    def __init__(self, width, height):
-        self._width = width
-        self._height = height
-        # buffers
-        self._buffer_visible = None
-        self._buffer_hidden = None
-        # initialise
-        self.clear()
-        self.flush()
-
-    @property
-    def width(self):
-        return self._width
-
-    @property
-    def height(self):
-        return self._height
-
-    def get(self, x, y):
-        """
-        Get a value from the visible buffer
-        """
-        return self._buffer_visible[y][x]
-
-    def set(self, x, y, value):
-        """
-        Set a value for the hidden buffer
-        """
-        self._buffer_hidden[y][x] = value
-
-    def set_from(self, buffer: 'DoubleBuffer', to_x=0, to_y=0, from_x=0, from_y=0, from_w=None, from_h=None):
-        """
-        Copy a region from another buffer into the specified location of this buffer.
-        Trims the regions if the positions are negative or there are size mismatches.
-        """
-        # defaults
-        if from_w is None: from_w = buffer.width
-        if from_h is None: from_h = buffer.height
-        # bounds
-        r_ox = max(0, -to_x, -from_x)
-        r_oy = max(0, -to_y, -from_y)
-        r_w = min(from_w, buffer.width - from_x, self.width - to_x) - r_ox
-        r_h = min(from_h, buffer.height - from_y, self.height - to_y) - r_oy
-        # checks
-        if (r_w <= 0) or (r_h <= 0):
-            return
-        # copy
-        for y in range(r_oy, r_oy+r_h):
-            self._buffer_hidden[to_y+y][to_x+r_ox:to_x+r_ox+r_w] = buffer._buffer_hidden[from_y+y][from_x+r_ox:from_x+r_ox+r_w]
-
-    def diffs(self):
-        """
-        Yield the different indices between the hidden buffer and the visible buffer
-        """
-        for y in range(self._height):
-            visible_row, hidden_row = self._buffer_visible[y], self._buffer_hidden[y]
-            for x in range(self._width):
-                if visible_row[x] != hidden_row[y]:
-                    yield x, y
-
-    def clear(self, char=' ', style=''):
-        """
-        Accepts a tuple of type: (char, style)
-        """
-        hidden_row = [(char, style) for x in range(self._width)]
-        # shallow copy the rows
-        self._buffer_hidden = [hidden_row[:] for y in range(self._height)]
-
-    def flush(self):
-        """
-        flush the hidden buffer to the visible buffer
-        """
-        # Shallow copy as contents is immutable
-        self._buffer_visible = [row[:] for row in self._buffer_hidden]
-
-
-# ========================================================================= #
-# Node                                                                      #
+# Component                                                                      #
 # ========================================================================= #
 
 
 def nondirty(func):
     def inner(self, *args, **kwargs):
         if self.dirty:
-            self.recompute()
-        return func(*args, **kwargs)
+            print('Warning: needs recompute')
+            # self.recompute()
+        return func(self, *args, **kwargs)
     return inner
 
 
@@ -128,7 +48,7 @@ def dirties(func):
     return func
 
 
-class Node:
+class Component:
 
     def __init__(self, width=None, height=None):
         assert width is None or (type(width) == int and width > 0)
@@ -141,15 +61,19 @@ class Node:
         self._y = None
         self._w = None
         self._h = None
-        # paint
-        self._buffer = None
-        # component
-        self._event_listener = None
+        # buffer
+        self._buffer: DoubleBuffer = None
         # stretch
         self._node = stretched.Node(stretched.Style(
             size=stretched.Size(
-                width=stretched.Dimension.new_points(width) if width else stretched.Dimension.AUTO,
-                height=stretched.Dimension.new_points(height) if height else stretched.Dimension.AUTO,
+                width=stretched.Dimension.new_points(width) if width else stretched.DimensionValue.AUTO,
+                height=stretched.Dimension.new_points(height) if height else stretched.DimensionValue.AUTO,
+            ),
+            padding=stretched.Rect(
+                start=stretched.Dimension.new_points(1),
+                end=stretched.Dimension.new_points(1),
+                top=stretched.Dimension.new_points(1),
+                bottom=stretched.Dimension.new_points(1),
             )
         ))
 
@@ -159,10 +83,10 @@ class Node:
     def dirty(self) -> bool:
         return self._node.dirty
 
-    def compute_layout(self):
-        print('WARNING: compute_layout is not implemented')
-        # self._buffer = DoubleBuffer(None, None)
-        pass
+    def compute_layout(self, width, height):
+        self._node.compute_layout(stretched.Size(width, height))
+        if not self._buffer or self._buffer.size != (width, height):
+            self._buffer = DoubleBuffer(width, height)
 
     # - - - - - - - - - - - - - - - RECTANGLE - - - - - - - - - - - - - - - #
 
@@ -195,7 +119,7 @@ class Node:
         return (self._x <= x < self._x + self._w) and (self._y <= y < self._y + self._y)
 
     @nondirty
-    def is_overlap(self, node: 'Node'):
+    def is_overlap(self, node: 'Component'):
         ox, oy, ow, oh = node.rect
         return not (
                 (self._y + self._h < oy) or (self._y > oy + oh) or
@@ -205,8 +129,8 @@ class Node:
     # - - - - - - - - - - - - - - - - NODES - - - - - - - - - - - - - - - - #
 
     @dirties
-    def add_child(self, node: 'Node'):
-        assert isinstance(node, Node)
+    def add_child(self, node: 'Component'):
+        assert isinstance(node, Component)
         assert not node.is_root
         assert not self.is_leaf
         assert not node.has_parent
@@ -216,8 +140,8 @@ class Node:
         node._parent = self
 
     @dirties
-    def remove_child(self, node: 'Node'):
-        assert isinstance(node, Node)
+    def remove_child(self, node: 'Component'):
+        assert isinstance(node, Component)
         assert node.parent is self
         assert self.contains_child(node)
         self._children.remove(node)
@@ -230,12 +154,12 @@ class Node:
     def has_children(self) -> bool: return len(self._children) > 0
 
     @property
-    def children(self) -> List['Node']: return self._children[:]
+    def children(self) -> List['Component']: return self._children[:]
     @property
-    def parent(self) -> Optional['Node']: return self._parent
+    def parent(self) -> Optional['Component']: return self._parent
 
-    def contains_child(self, node: 'Node'):
-        assert isinstance(node, Node)
+    def contains_child(self, node: 'Component'):
+        assert isinstance(node, Component)
         return node in self._children
 
     def get_child_from_coord_recursive(self, x, y):
@@ -252,18 +176,18 @@ class Node:
 
     # - - - - - - - - - - - - - - - - EVENT - - - - - - - - - - - - - - - - #
 
-    @property
-    def has_event_listener(self):
-        return callable(self._event_listener)
-
-    def set_event_listener(self, func):
-        assert not self.has_event_listener
-        assert callable(func)
-        self._event_listener = func
-
-    def remove_event_listener(self):
-        assert self.has_event_listener
-        self._event_listener = None
+    # @property
+    # def has_event_listener(self):
+    #     return callable(self._event_listener)
+    #
+    # def set_event_listener(self, func):
+    #     assert not self.has_event_listener
+    #     assert callable(func)
+    #     self._event_listener = func
+    #
+    # def remove_event_listener(self):
+    #     assert self.has_event_listener
+    #     self._event_listener = None
 
     # def handle_mouse_click(self, x, y):
     #     if self.contains_coord(x, y):
@@ -275,6 +199,7 @@ class Node:
 
     # - - - - - - - - - - - - - - - - PAINT - - - - - - - - - - - - - - - - #
 
+    @nondirty
     def repaint(self):
         self.paint(self._buffer)
         for child in self._children:
@@ -284,7 +209,28 @@ class Node:
         self._buffer.flush()
 
     def paint(self, buffer):
-        pass
+        # ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        # ┃         ┃   0	1	2	3	4	5	6	7	8	9	A	B	C	D	E	F   ┃
+        # ┣━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+        # ┃ U+250x  ┃   ─	━	│	┃	┄	┅	┆	┇	┈	┉	┊	┋	┌	┍	┎	┏   ┃
+        # ┃ U+251x  ┃   ┐	┑	┒	┓	└	┕	┖	┗	┘	┙	┚	┛	├	┝	┞	┟   ┃
+        # ┃ U+252x  ┃   ┠	┡	┢	┣	┤	┥	┦	┧	┨	┩	┪	┫	┬	┭	┮	┯   ┃
+        # ┃ U+253x  ┃   ┰	┱	┲	┳	┴	┵	┶	┷	┸	┹	┺	┻	┼	┽	┾	┿   ┃
+        # ┃ U+254x  ┃   ╀	╁	╂	╃	╄	╅	╆	╇	╈	╉	╊	╋	╌	╍	╎	╏   ┃
+        # ┃ U+255x  ┃   ═	║	╒	╓	╔	╕	╖	╗	╘	╙	╚	╛	╜	╝	╞	╟   ┃
+        # ┃ U+256x  ┃   ╠	╡	╢	╣	╤	╥	╦	╧	╨	╩	╪	╫	╬	╭	╮	╯   ┃
+        # ┃ U+257x  ┃   ╰	╱	╲	╳	╴	╵	╶	╷	╸	╹	╺	╻	╼	╽	╾	╿   ┃
+        # ┗━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+        # for x in range(1, buffer.width-1):
+        #     buffer.set(x, 0, '━')
+        #     buffer.set(x, buffer.height-1, '━')
+        # for y in range(1, buffer.height-1):
+        #     buffer.set(0, y, '┃')
+        #     buffer.set(buffer.width-1, y, '┃')
+        buffer.set(0, 0, 'R')
+        buffer.set(buffer.width-1, 0, '┓')
+        buffer.set(0, buffer.height-1, '┗')
+        buffer.set(buffer.width-1, buffer.height-1, '┛')
 
     # - - - - - - - - - - - - - -IS OVERRIDEABLE- - - - - - - - - - - - - - #
 
@@ -294,21 +240,7 @@ class Node:
     @property
     def is_root(self): return False
 
-# ========================================================================= #
-# Window                                                                    #
-# ========================================================================= #
-
-
-# class Window(Component):
-#
-#     def __init__(self, w, h):
-#         super().__init__(0, 0, w, h)
-#         self._buffer = DoubleBuffer(w, h)
-#
-#     def render(self):
-#         self.paint(self._buffer)
-
 
 # ========================================================================= #
-# END                                                                    #
+# END                                                                       #
 # ========================================================================= #
