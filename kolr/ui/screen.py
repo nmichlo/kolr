@@ -23,8 +23,8 @@
 #  ~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~=~  #
 
 
-from kolr.term.io.manager import TermManager, EVENT_RESIZE, EVENT_RENDER
-from kolr.ui.component import Component
+from kolr.term.io.manager import TermManager, EVENT_RESIZE, EVENT_KEY, EVENT_RENDER
+from kolr.ui.buffer import DoubleBuffer
 
 
 # ========================================================================= #
@@ -32,11 +32,13 @@ from kolr.ui.component import Component
 # ========================================================================= #
 
 
-class Window(Component):
-    def __init__(self, frame_rate=10, tick_rate=5):
-        super().__init__()
+class Screen(object):
+
+    def __init__(self, frame_rate=10):
         # initialise
-        self._manager = TermManager(frame_rate=frame_rate, tick_rate=tick_rate)
+        self._manager = TermManager(frame_rate=frame_rate, tick_rate=-1)
+        # buffer
+        self._buffer = DoubleBuffer(0, 0)
 
         # EXTENDS: TermManager
         self.on_key = self._manager.on_key
@@ -47,33 +49,19 @@ class Window(Component):
 
         # IMPLEMENTS: TermManager
         @self._manager.on(EVENT_RESIZE)
-        def _recompute_on_resize_terminal(w, h):
-            self.compute_layout(w, h)
+        def _(w, h):
+            if (w, h) != self._buffer.size:
+                self._buffer = self._buffer.copy(w, h)
 
         @self._manager.on(EVENT_RENDER)
-        def _write_buffer_to_screen_on_render(delta):
-            # self._manager.clear()
-            self.repaint()
+        def _(delta):
             # WRITE DIFFS
-            # count = 0
-            # for x, y in self._buffer.diffs():
-            #     self._manager.write(self._buffer.get(x, y), x=x, y=y, unsafe=True)
-            #     count += 1
-            string = '\n'.join(''.join(row) for row in self._buffer._buffer)
-            self._manager.write(string, 0, 0, unsafe=True)
-            count = len(string)
+            count = 0
+            for x, y in self._buffer.diffs():
+                self._manager.write(self._buffer.get(x, y), x=x, y=y, unsafe=True)
+                count += 1
 
-            # print(len(string))
-
-            # BUFFER
-            self._buffer.swap()
             self._buffer.flush()
-            # INFO
-            self._render_count += 1
-            self._manager.write(f'diffs: {count}    ', 1, 1)
-            self._manager.write(f'renders: {self._render_count}', 1, 2)
-            self._manager.write(f'hid: {self._buffer._buffer[0][0]}', 1, 3)
-            self._manager.write(f'vis: {self._buffer._buffer_visible[0][0]}', 1, 4)
 
     def start(self):
         self._manager.start()
